@@ -1,0 +1,24 @@
+{
+  "name": "repofun-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ChaosCraft: The First Crowd-Sourced AI-Powered Codebase in History",
+  "scripts": {
+    "dev": "pnpm --filter portal dev",
+    "build": "pnpm --filter portal build && pnpm --filter galaxy build",
+    "build:portal": "pnpm --filter portal build",
+    "build:galaxy": "pnpm --filter galaxy build",
+    "clean": "rm -rf node_modules **/node_modules",
+    "lint": "pnpm --filter portal lint",
+    "typecheck": "pnpm --filter portal typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.6"
+}

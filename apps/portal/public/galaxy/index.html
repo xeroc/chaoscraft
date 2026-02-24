@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The ChaosCraft Galaxy - repo.fun</title>
+  <meta name="description" content="Watch the first crowd-sourced AI-powered codebase grow, one star at a time.">
+  <link rel="stylesheet" href="/galaxy/css/galaxy.css">
+</head>
+<body>
+  <div id="galaxy-container"></div>
+
+  <!-- UI Overlay -->
+  <div id="ui-overlay">
+    <!-- Header -->
+    <header class="galaxy-header">
+      <div class="container">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="text-4xl">🌌</div>
+            <div>
+              <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                The Galaxy
+              </h1>
+              <p class="text-sm text-blue-300/70">
+                <span id="star-count">0</span> features built so far
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-4 text-sm">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-white" id="stars-today">0</div>
+              <div class="text-blue-300/70">Today</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-white" id="stars-week">0</div>
+              <div class="text-blue-300/70">This Week</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-white" id="stars-total">0</div>
+              <div class="text-blue-300/70">Total</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Star Details Modal -->
+    <div id="star-modal" class="star-modal hidden">
+      <div class="star-modal-content">
+        <button class="close-modal">&times;</button>
+        <div id="star-modal-body">
+          <!-- Content injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="galaxy-controls">
+      <button id="zoom-in" class="control-btn" title="Zoom In">+</button>
+      <button id="zoom-out" class="control-btn" title="Zoom Out">−</button>
+      <button id="reset-view" class="control-btn" title="Reset View">⟲</button>
+      <button id="toggle-auto-rotate" class="control-btn" title="Toggle Auto-Rotate">⏸</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="galaxy-legend">
+      <div class="legend-title">Feature Types</div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-color bg-blue-500"></div>
+          <span>UI Features</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color bg-green-500"></div>
+          <span>Logic & APIs</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color bg-yellow-500"></div>
+          <span>Data & Models</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color bg-purple-500"></div>
+          <span>Infrastructure</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color bg-pink-500"></div>
+          <span>Tests</span>
+        </div>
+      </div>
+      <div class="legend-title mt-4">Priority</div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-star pulse"></div>
+          <span>Express (pulses)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="galaxy-footer">
+      <div class="container">
+        <div class="text-center text-blue-300/50 text-sm">
+          Click any star to see feature details • Scroll to zoom • Drag to rotate
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r161/three.min.js"></script>
+  <script src="/galaxy/js/star-data.js"></script>
+  <script src="/galaxy/js/galaxy.js"></script>
+</body>
+</html>
