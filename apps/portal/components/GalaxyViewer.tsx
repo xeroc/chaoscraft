@@ -48,11 +48,18 @@ export default function GalaxyViewer() {
   const raycasterRef = useRef<any>(null)
   const mouseRef = useRef({ x: 0, y: 0 })
 
+  // Selection visual refs
+  const selectedMeshRef = useRef<any>(null)
+  const selectionRingRef = useRef<any>(null)
+  const targetScaleRef = useRef<number>(1)
+
   const CONFIG = {
     cameraDistance: 150,
     minDistance: 20,
     maxDistance: 300,
     rotationSpeed: 0.0005,
+    selectionScaleMultiplier: 2.5,
+    selectionAnimationSpeed: 0.08,
   }
 
   // Fetch star data
@@ -154,6 +161,16 @@ export default function GalaxyViewer() {
           containerRef.current.removeChild(rendererRef.current.domElement)
         }
       }
+      // Dispose of selection ring
+      if (selectionRingRef.current) {
+        if (selectionRingRef.current.geometry) {
+          selectionRingRef.current.geometry.dispose()
+        }
+        if (selectionRingRef.current.material) {
+          selectionRingRef.current.material.dispose()
+        }
+        selectionRingRef.current = null
+      }
       // Dispose of star meshes and their geometries/materials
       starsRef.current.forEach((mesh: any) => {
         if (mesh && mesh.geometry) {
@@ -164,6 +181,7 @@ export default function GalaxyViewer() {
         }
       })
       starsRef.current = []
+      selectedMeshRef.current = null
     }
   }, [starData])
 
@@ -347,6 +365,59 @@ export default function GalaxyViewer() {
     camera: any,
     scene: any
   ) => {
+    // Helper to reset previous selection visual
+    const resetSelectionVisual = () => {
+      // Remove old selection ring
+      if (selectionRingRef.current) {
+        scene.remove(selectionRingRef.current)
+        if (selectionRingRef.current.geometry) {
+          selectionRingRef.current.geometry.dispose()
+        }
+        if (selectionRingRef.current.material) {
+          selectionRingRef.current.material.dispose()
+        }
+        selectionRingRef.current = null
+      }
+
+      // Reset scale of previously selected mesh
+      if (selectedMeshRef.current) {
+        selectedMeshRef.current.scale.set(1, 1, 1)
+        selectedMeshRef.current = null
+      }
+      targetScaleRef.current = 1
+    }
+
+    // Helper to apply selection visual to a mesh
+    const applySelectionVisual = (starMesh: any) => {
+      // Reset any previous selection
+      resetSelectionVisual()
+
+      // Set new selection
+      selectedMeshRef.current = starMesh
+      targetScaleRef.current = CONFIG.selectionScaleMultiplier
+
+      // Create selection ring (torus around the star)
+      const ringRadius = (starMesh.geometry?.radius || starMesh.userData.size * 0.5) * 2.5
+      const ringGeometry = new THREE.TorusGeometry(ringRadius, 0.2, 8, 32)
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+      })
+      const selectionRing = new THREE.Mesh(ringGeometry, ringMaterial)
+
+      // Position ring at star position
+      selectionRing.position.set(
+        starMesh.position.x,
+        starMesh.position.y,
+        starMesh.position.z
+      )
+
+      scene.add(selectionRing)
+      selectionRingRef.current = selectionRing
+    }
+
     domElement.addEventListener('click', (e: MouseEvent) => {
       if (!raycasterRef.current || !starsRef.current.length) return
 
@@ -366,6 +437,9 @@ export default function GalaxyViewer() {
 
         // Check if the mesh has star metadata in userData
         if (starMesh.userData && starMesh.userData.id) {
+          // Apply selection visual
+          applySelectionVisual(starMesh)
+
           // Create a StarData object from userData
           const selectedStarData: StarData = {
             id: starMesh.userData.id,
@@ -391,6 +465,7 @@ export default function GalaxyViewer() {
         }
       } else {
         // Click on empty space - clear selection
+        resetSelectionVisual()
         setSelectedStar(null)
         setShowAllFiles(false)
       }
@@ -402,6 +477,26 @@ export default function GalaxyViewer() {
       // Auto-rotate
       if (sceneRef.current) {
         sceneRef.current.rotation.y += CONFIG.rotationSpeed
+      }
+
+      // Animate selection scale with smooth transition
+      if (selectedMeshRef.current) {
+        const mesh = selectedMeshRef.current
+        const currentScale = mesh.scale.x
+        const targetScale = targetScaleRef.current
+
+        // Smooth interpolation (lerp)
+        const newScale = currentScale + (targetScale - currentScale) * CONFIG.selectionAnimationSpeed
+
+        if (Math.abs(newScale - currentScale) > 0.001) {
+          mesh.scale.set(newScale, newScale, newScale)
+        }
+
+        // Animate selection ring rotation for visual effect
+        if (selectionRingRef.current) {
+          selectionRingRef.current.rotation.z += 0.01
+          selectionRingRef.current.rotation.x += 0.005
+        }
       }
 
       renderer.render(scene, camera)
@@ -430,6 +525,31 @@ export default function GalaxyViewer() {
     return () =>
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Clear selection visual and state
+  const clearSelection = () => {
+    // Remove selection ring
+    if (selectionRingRef.current && sceneRef.current) {
+      sceneRef.current.remove(selectionRingRef.current)
+      if (selectionRingRef.current.geometry) {
+        selectionRingRef.current.geometry.dispose()
+      }
+      if (selectionRingRef.current.material) {
+        selectionRingRef.current.material.dispose()
+      }
+      selectionRingRef.current = null
+    }
+
+    // Reset scale of previously selected mesh
+    if (selectedMeshRef.current) {
+      selectedMeshRef.current.scale.set(1, 1, 1)
+      selectedMeshRef.current = null
+    }
+    targetScaleRef.current = 1
+
+    setSelectedStar(null)
+    setShowAllFiles(false)
+  }
 
   const refreshGalaxy = () => {
     // Reload star data
@@ -496,7 +616,14 @@ export default function GalaxyViewer() {
 
       {/* Selected Star Modal */}
       {selectedStar && (
-        <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              clearSelection()
+            }
+          }}
+        >
           <div className="bg-white/10 border border-white/20 rounded-xl p-6 max-w-lg w-full">
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
@@ -520,7 +647,7 @@ export default function GalaxyViewer() {
                 <p className="text-blue-200/70 mt-2">{selectedStar.description}</p>
               </div>
               <button
-                onClick={() => setSelectedStar(null)}
+                onClick={clearSelection}
                 className="text-white/70 hover:text-white text-2xl ml-4"
               >
                 &times;

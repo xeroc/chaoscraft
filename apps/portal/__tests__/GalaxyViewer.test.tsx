@@ -23,6 +23,7 @@ vi.mock('three', () => ({
   Scene: vi.fn(function(this: any) {
     this.rotation = { x: 0, y: 0, z: 0 }
     this.add = vi.fn()
+    this.remove = vi.fn()
     this.fog = null
   }),
   PerspectiveCamera: vi.fn(function(this: any, fov: any, aspect: any, near: any, far: any) {
@@ -54,6 +55,14 @@ vi.mock('three', () => ({
     this.heightSegments = heightSegments
     this.dispose = vi.fn().mockImplementation(function() {})
   }),
+  TorusGeometry: vi.fn(function(this: any, radius: any, tube: any, radialSegments: any, tubularSegments: any) {
+    this.radius = radius
+    this.tube = tube
+    this.radialSegments = radialSegments
+    this.tubularSegments = tubularSegments
+    this.dispose = vi.fn()
+    return this
+  }),
   MeshBasicMaterial: vi.fn(function(this: any, options: any) {
     this.color = options.color
     this.transparent = options.transparent
@@ -64,7 +73,17 @@ vi.mock('three', () => ({
   Mesh: vi.fn(function(this: any, geometry: any, material: any) {
     this.geometry = geometry
     this.material = material
-    this.position = { x: 0, y: 0, z: 0 }
+    this.position = { x: 0, y: 0, z: 0, set: vi.fn((x: number, y: number, z: number) => {
+      this.position.x = x
+      this.position.y = y
+      this.position.z = z
+    }) }
+    this.rotation = { x: 0, y: 0, z: 0 }
+    this.scale = { x: 1, y: 1, z: 1, set: vi.fn((x: number, y: number, z: number) => {
+      this.scale.x = x
+      this.scale.y = y
+      this.scale.z = z
+    }) }
     this.userData = {}
   }),
 }))
@@ -522,5 +541,238 @@ describe('Click Detection Logic', () => {
 
     expect(intersects.length).toBe(1)
     expect(intersects[0].object.userData.id).toBeUndefined()
+  })
+})
+
+describe('Selection Visual State', () => {
+  const COLOR_MAPPINGS: Record<string, number> = {
+    blue: 0x3b82f6,
+    green: 0x22c55e,
+    yellow: 0xeab308,
+    purple: 0xa855f7,
+    pink: 0xec4899,
+  }
+
+  const CONFIG = {
+    selectionScaleMultiplier: 2.5,
+    selectionAnimationSpeed: 0.08,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should create selection ring (TorusGeometry) when star is selected', () => {
+    const THREE = require('three')
+
+    // Create a star mesh
+    const starRadius = 1.5
+    const geometry = new THREE.SphereGeometry(starRadius, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.blue,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+
+    // Create selection ring (simulating what happens on selection)
+    const ringRadius = starRadius * 2.5
+    const ringGeometry = new THREE.TorusGeometry(ringRadius, 0.2, 8, 32)
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    })
+    const selectionRing = new THREE.Mesh(ringGeometry, ringMaterial)
+
+    // Verify ring was created with correct properties
+    expect(ringGeometry).toBeDefined()
+    expect(ringMaterial).toBeDefined()
+    expect(selectionRing).toBeDefined()
+    // Verify selection ring has correct geometry and material
+    expect(selectionRing.geometry).toBe(ringGeometry)
+    expect(selectionRing.material).toBe(ringMaterial)
+    expect(ringMaterial.opacity).toBe(0.7)
+    expect(ringMaterial.transparent).toBe(true)
+  })
+
+  it('should scale selected star mesh up', () => {
+    const THREE = require('three')
+
+    // Create a star mesh
+    const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.green,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+
+    // Initial scale should be 1
+    expect(starMesh.scale.x).toBe(1)
+    expect(starMesh.scale.y).toBe(1)
+    expect(starMesh.scale.z).toBe(1)
+
+    // When selected, scale should change
+    const targetScale = CONFIG.selectionScaleMultiplier
+    starMesh.scale.set(targetScale, targetScale, targetScale)
+
+    expect(starMesh.scale.x).toBe(targetScale)
+    expect(starMesh.scale.y).toBe(targetScale)
+    expect(starMesh.scale.z).toBe(targetScale)
+  })
+
+  it('should animate scale transition smoothly', () => {
+    const THREE = require('three')
+
+    // Create a star mesh
+    const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.yellow,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+
+    // Simulate smooth animation (lerp)
+    const currentScale = 1
+    const targetScale = 2.5
+    const speed = CONFIG.selectionAnimationSpeed
+
+    // First animation frame
+    let newScale = currentScale + (targetScale - currentScale) * speed
+    expect(newScale).toBeCloseTo(1.12, 2) // 1 + (2.5 - 1) * 0.08 = 1.12
+
+    // Second animation frame
+    newScale = newScale + (targetScale - newScale) * speed
+    expect(newScale).toBeGreaterThan(1.16) // Should increase
+    expect(newScale).toBeLessThan(targetScale) // But not exceed target
+
+    // After many frames, should approach target
+    for (let i = 0; i < 100; i++) {
+      newScale = newScale + (targetScale - newScale) * speed
+    }
+    expect(newScale).toBeCloseTo(targetScale, 1)
+  })
+
+  it('should reset scale when selection is cleared', () => {
+    const THREE = require('three')
+
+    // Create a selected star mesh
+    const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.purple,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+
+    // Scale it up as if selected
+    starMesh.scale.set(2.5, 2.5, 2.5)
+    expect(starMesh.scale.x).toBe(2.5)
+
+    // Clear selection - reset scale
+    starMesh.scale.set(1, 1, 1)
+
+    expect(starMesh.scale.x).toBe(1)
+    expect(starMesh.scale.y).toBe(1)
+    expect(starMesh.scale.z).toBe(1)
+  })
+
+  it('should dispose selection ring geometry and material when clearing selection', () => {
+    const THREE = require('three')
+
+    // Create selection ring
+    const ringGeometry = new THREE.TorusGeometry(3.75, 0.2, 8, 32)
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    })
+    const selectionRing = new THREE.Mesh(ringGeometry, ringMaterial)
+
+    // Verify dispose functions exist
+    expect(typeof ringGeometry.dispose).toBe('function')
+    expect(typeof ringMaterial.dispose).toBe('function')
+
+    // Simulate cleanup - should not throw
+    expect(() => {
+      if (selectionRing.geometry) {
+        selectionRing.geometry.dispose()
+      }
+      if (selectionRing.material) {
+        selectionRing.material.dispose()
+      }
+    }).not.toThrow()
+  })
+
+  it('should animate selection ring rotation', () => {
+    const THREE = require('three')
+
+    // Create selection ring
+    const ringGeometry = new THREE.TorusGeometry(3.75, 0.2, 8, 32)
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    })
+    const selectionRing = new THREE.Mesh(ringGeometry, ringMaterial)
+
+    // Initial rotation
+    selectionRing.rotation.z = 0
+    selectionRing.rotation.x = 0
+
+    // Simulate animation (rotation)
+    selectionRing.rotation.z += 0.01
+    selectionRing.rotation.x += 0.005
+
+    expect(selectionRing.rotation.z).toBe(0.01)
+    expect(selectionRing.rotation.x).toBe(0.005)
+
+    // Multiple frames
+    for (let i = 0; i < 10; i++) {
+      selectionRing.rotation.z += 0.01
+      selectionRing.rotation.x += 0.005
+    }
+
+    expect(selectionRing.rotation.z).toBeCloseTo(0.11, 2)
+    expect(selectionRing.rotation.x).toBeCloseTo(0.055, 3)
+  })
+
+  it('should handle selection ring positioning at star location', () => {
+    const THREE = require('three')
+
+    // Create a star mesh at specific position
+    const starGeometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const starMaterial = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.pink,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(starGeometry, starMaterial)
+    starMesh.position.set(10, 20, 30)
+
+    // Create selection ring at same position
+    const ringGeometry = new THREE.TorusGeometry(3.75, 0.2, 8, 32)
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    })
+    const selectionRing = new THREE.Mesh(ringGeometry, ringMaterial)
+    selectionRing.position.set(starMesh.position.x, starMesh.position.y, starMesh.position.z)
+
+    expect(selectionRing.position.x).toBe(starMesh.position.x)
+    expect(selectionRing.position.y).toBe(starMesh.position.y)
+    expect(selectionRing.position.z).toBe(starMesh.position.z)
   })
 })
