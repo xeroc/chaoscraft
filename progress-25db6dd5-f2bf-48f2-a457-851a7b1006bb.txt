@@ -125,6 +125,49 @@ Started: 2025-02-25 12:03:00
 
 ---
 
+## 2026-02-25 14:16 GMT+1 - story-6: Add visual feedback for selected star
+- Added visual selection feedback when a star is clicked:
+  - Scale animation: selected star scales up to 2.5x with smooth lerp transition
+  - Selection ring: white torus (TorusGeometry) rendered around selected star
+  - Ring rotation animation for visual effect (rotates on z and x axes)
+- Added selection state management:
+  - `selectedMeshRef` tracks the currently selected mesh
+  - `selectionRingRef` tracks the selection ring mesh
+  - `targetScaleRef` controls the target scale for animation
+- Selection clearing:
+  - Click on empty space clears selection visual and state
+  - Modal close button clears selection via `clearSelection()` function
+  - Click on modal backdrop (outside modal content) also clears selection
+- Added `clearSelection()` function that:
+  - Removes selection ring from scene and disposes geometry/material
+  - Resets selected mesh scale to 1
+  - Clears selectedStar state
+- Added cleanup in useEffect for selection ring disposal
+- Added 8 new tests for selection visual state (53 total tests):
+  - Tests for selection ring creation
+  - Tests for scale animation with smooth lerp transition
+  - Tests for scale reset on deselection
+  - Tests for ring geometry/material disposal
+  - Tests for ring rotation animation
+  - Tests for ring positioning at star location
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added selection refs, clearSelection function, selection visual in click handler, animate loop scale animation)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added TorusGeometry mock, Selection Visual State test suite)
+- All acceptance criteria met:
+  1. Selected star mesh has a distinct visual state (scale + glow ring) ✓
+  2. Selection state is cleared when clicking elsewhere or closing modal ✓
+  3. Visual feedback is smooth with animation transition ✓
+  4. Typecheck passes ✓
+  5. Tests for selection visual state pass ✓
+- **Learnings:**
+  - Three.js TorusGeometry for selection rings: radius * 2.5 creates visible ring
+  - Lerp animation for smooth scale: `current + (target - current) * 0.08`
+  - Selection ring needs its own rotation animation for visual effect
+  - Clear selection function must dispose geometry AND material to prevent memory leaks
+  - Modal backdrop click detection: `if (e.target === e.currentTarget)` for outside-click
+
+---
+
 ## 2026-02-25 13:52 GMT+1 - story-5: Add files changed list to star detail modal
 - Extended StarData interface with `filesChanged: FileChange[]` containing path, additions, deletions
 - Files are sorted by lines changed (descending) in `transformPRToStar` function
@@ -153,5 +196,37 @@ Started: 2025-02-25 12:03:00
   - File path truncation: use `truncate flex-1 mr-2` with title attribute for full path tooltip
   - FilesChanged array needs to be included in userData when creating star meshes
   - Sorting logic: `(b.additions + b.deletions) - (a.additions + a.deletions)` for descending
+
+---
+
+## 2026-02-25 14:28 GMT+1 - story-7: Add hover cursor change for interactive stars
+- Added hover cursor change functionality to indicate clickable stars:
+  - Added `checkHover()` helper function in setupControls to detect hover state
+  - Cursor changes to 'pointer' when raycaster intersects star meshes
+  - Cursor reverts to 'default' when not hovering over any star
+  - Cursor resets to 'default' on mouse leave event
+  - Uses same raycasting infrastructure as click detection (raycasterRef, mouseRef)
+- Added 6 new tests for cursor hover state (59 total tests):
+  - Test for cursor change to pointer when hovering over a star mesh
+  - Test for cursor reverting to default when not hovering over any star
+  - Test for using same raycasting infrastructure for hover detection
+  - Test for cursor reset on mouse leave
+  - Test for handling hover state changes with multiple stars
+  - Test for NDC conversion in hover detection
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added checkHover function, mousemove cursor update, mouseleave cursor reset)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added Cursor Hover State test suite with 6 tests)
+- All acceptance criteria met:
+  1. Cursor changes to 'pointer' when hovering over a star mesh ✓
+  2. Cursor reverts to 'default' when not hovering over any star ✓
+  3. Hover detection uses the same raycasting infrastructure ✓
+  4. Typecheck passes ✓
+  5. Tests for cursor state changes pass ✓
+- **Learnings:**
+  - Cursor style can be set via `domElement.style.cursor = 'pointer' | 'default'`
+  - Hover detection should be checked in the mousemove handler after updating mouse position
+  - Mouse leave event handler should reset cursor to default for consistent UX
+  - Raycaster.intersectObjects returns array; check `intersects.length > 0` for hover state
+  - Tests for cursor state need mock domElement with `style` property
 
 ---
