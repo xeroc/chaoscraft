@@ -11,6 +11,10 @@ Started: 2025-02-25 12:03:00
 - Test files use `.test.tsx` extension
 - Run tests with `pnpm test:run` or `pnpm test`
 - Test config in `vitest.config.ts`
+- Mock Three.js objects with vi.mock() before importing components
+- Mock intersection objects must have point property for TypeScript
+- Mock meshes need geometry, material, position, and userData properties
+- Use vi.fn().mockImplementation() for complex mock behavior
 
 ### Build & Typecheck
 - Typecheck: `pnpm typecheck` (runs tsc --noEmit)
@@ -23,7 +27,8 @@ Started: 2025-02-25 12:03:00
 - Three.js version: 0.161.0
 - Scene, camera, renderer pattern used throughout
 - Uses `useRef` for Three.js objects (scene, camera, renderer, animation)
-- Stars are created as THREE.Points with BufferGeometry
+- Stars are now created as individual THREE.Mesh objects with SphereGeometry for raycasting
+- Star metadata is stored in mesh.userData for retrieval during raycasting
 
 ### Component Patterns
 - React functional components with TypeScript
@@ -53,5 +58,53 @@ Started: 2025-02-25 12:03:00
   - Raycaster needs to use setFromCamera() with Vector2 containing NDC coordinates
   - Vitest config needs to exclude @vitejs/plugin-react to avoid version conflicts
   - Type checking tests requires explicit type annotations on mock constructor `this` parameters
+
+---
+
+## 2025-02-25 12:23:00 - story-2: Map star data to Three.js mesh objects for raycasting
+- Replaced Points-based star rendering with individual THREE.Mesh objects
+- Each star is now a THREE.Mesh with SphereGeometry for raycasting
+- Star metadata stored in mesh.userData (id, issueNumber, title, description, color, size, brightness, priority, linesChanged, files, commitHash, mergedAt, builtBy)
+- Star meshes stored in starsRef.current array for raycasting intersection tests
+- Added glow effect for larger stars (size > 2) using larger, transparent sphere meshes
+- Updated setupClickDetection to work with mesh objects and retrieve metadata from userData
+- Enhanced cleanup to properly dispose of all mesh geometries and materials
+- Added tests for star mesh creation, metadata storage, and cleanup
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (replaced createStars with mesh-based implementation, updated click detection, enhanced cleanup)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added 5 tests for star mesh creation)
+- **Learnings:**
+  - Individual meshes allow metadata storage in userData for raycasting
+  - SphereGeometry with radius = size * 0.5 creates visible star points
+  - Glow effect achieved by adding larger transparent sphere around main star mesh
+  - Cleanup must dispose both geometry and material for each mesh to prevent memory leaks
+  - Raycaster works with Mesh objects just like Points, but provides direct access to userData
+
+---
+## 2025-02-25 12:44:00 - story-3: Implement click-to-select functionality with raycasting
+- Added clear selection logic when clicking on empty space
+- Updated setupClickDetection to setSelectedStar(null) when no intersections found
+- Added comprehensive tests for click detection logic:
+  - Finding intersected star meshes
+  - Handling empty intersections
+  - Extracting metadata from first intersected star
+  - Handling multiple intersections (using first one)
+  - Handling meshes without userData
+- All acceptance criteria met:
+  1. On canvas click, raycaster finds intersected star meshes ✓
+  2. First intersected star's metadata is extracted from mesh.userData ✓
+  3. selectedStar state is updated with the clicked star's data ✓
+  4. Clicks on empty space clear the selection ✓
+  5. Typecheck passes ✓
+  6. Tests for click detection logic pass ✓
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added else branch to clear selection)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added 5 tests for click detection logic)
+- **Learnings:**
+  - Click on empty space is handled by checking if intersects.length === 0
+  - Selection clearing uses setSelectedStar(null) which hides the modal
+  - Tests for click detection must mock raycaster.intersectObjects return values
+  - TypeScript strict mode requires proper typing of mock intersection objects
+  - Mock meshes for tests need proper structure (geometry, material, position, userData)
 
 ---
