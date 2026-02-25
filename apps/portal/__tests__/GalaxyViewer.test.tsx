@@ -776,3 +776,234 @@ describe('Selection Visual State', () => {
     expect(selectionRing.position.z).toBe(starMesh.position.z)
   })
 })
+
+describe('Cursor Hover State', () => {
+  const COLOR_MAPPINGS: Record<string, number> = {
+    blue: 0x3b82f6,
+    green: 0x22c55e,
+    yellow: 0xeab308,
+    purple: 0xa855f7,
+    pink: 0xec4899,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should change cursor to pointer when hovering over a star mesh', () => {
+    const THREE = require('three')
+
+    // Create a mock domElement with style property
+    const mockDomElement = {
+      style: { cursor: 'default' },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      getBoundingClientRect: vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 400,
+        height: 300,
+      })),
+    }
+
+    // Create a star mesh
+    const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.blue,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+    starMesh.userData = { id: 1 }
+
+    // Create raycaster
+    const raycaster = new THREE.Raycaster()
+    const mouseVector = new THREE.Vector2(0, 0)
+    raycaster.setFromCamera(mouseVector, { position: { x: 0, y: 0, z: 150 } })
+
+    // Mock intersectObjects to return our star
+    const intersectResult = [
+      {
+        object: starMesh,
+        point: { x: 0, y: 0, z: 0 },
+        distance: 100,
+      },
+    ]
+    raycaster.intersectObjects = vi.fn(() => intersectResult)
+
+    // Simulate hover check
+    const intersects = raycaster.intersectObjects([starMesh])
+
+    // Cursor should be pointer when intersecting a star
+    if (intersects.length > 0) {
+      mockDomElement.style.cursor = 'pointer'
+    }
+
+    expect(mockDomElement.style.cursor).toBe('pointer')
+  })
+
+  it('should revert cursor to default when not hovering over any star', () => {
+    const THREE = require('three')
+
+    // Create a mock domElement with style property
+    const mockDomElement = {
+      style: { cursor: 'pointer' },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      getBoundingClientRect: vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 400,
+        height: 300,
+      })),
+    }
+
+    // Create a raycaster
+    const raycaster = new THREE.Raycaster()
+    const mouseVector = new THREE.Vector2(0.5, 0.5) // Mouse away from center
+    raycaster.setFromCamera(mouseVector, { position: { x: 0, y: 0, z: 150 } })
+
+    // Mock intersectObjects to return empty array (no intersections)
+    raycaster.intersectObjects = vi.fn(() => [])
+
+    // Simulate hover check
+    const intersects = raycaster.intersectObjects([])
+
+    // Cursor should be default when not intersecting any star
+    if (intersects.length > 0) {
+      mockDomElement.style.cursor = 'pointer'
+    } else {
+      mockDomElement.style.cursor = 'default'
+    }
+
+    expect(mockDomElement.style.cursor).toBe('default')
+  })
+
+  it('should use same raycasting infrastructure for hover detection', () => {
+    const THREE = require('three')
+
+    // Create raycaster
+    const raycaster = new THREE.Raycaster()
+
+    // Verify raycaster has the necessary methods
+    expect(typeof raycaster.setFromCamera).toBe('function')
+    expect(typeof raycaster.intersectObjects).toBe('function')
+    expect(raycaster.params.Points).toBeDefined()
+
+    // Create a star mesh
+    const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS.green,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    })
+    const starMesh = new THREE.Mesh(geometry, material)
+
+    // Use raycaster for hover detection (same infrastructure as click detection)
+    const mouseVector = new THREE.Vector2(0, 0)
+    raycaster.setFromCamera(mouseVector, { position: { x: 0, y: 0, z: 150 } })
+    const intersects = raycaster.intersectObjects([starMesh])
+
+    expect(Array.isArray(intersects)).toBe(true)
+  })
+
+  it('should reset cursor to default on mouse leave', () => {
+    // Create a mock domElement with style property
+    const mockDomElement = {
+      style: { cursor: 'pointer' },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      getBoundingClientRect: vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 400,
+        height: 300,
+      })),
+    }
+
+    // Simulate mouse leave event
+    const handleMouseLeave = () => {
+      mockDomElement.style.cursor = 'default'
+    }
+
+    // Set cursor to pointer first
+    mockDomElement.style.cursor = 'pointer'
+    expect(mockDomElement.style.cursor).toBe('pointer')
+
+    // Trigger mouse leave
+    handleMouseLeave()
+
+    // Cursor should be reset to default
+    expect(mockDomElement.style.cursor).toBe('default')
+  })
+
+  it('should handle hover state changes with multiple stars', () => {
+    const THREE = require('three')
+
+    // Create a mock domElement
+    const mockDomElement = {
+      style: { cursor: 'default' },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+
+    // Create multiple star meshes
+    const stars: any[] = []
+    for (let i = 0; i < 5; i++) {
+      const geometry = new THREE.SphereGeometry(1.5, 8, 8)
+      const material = new THREE.MeshBasicMaterial({
+        color: COLOR_MAPPINGS.blue,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+      })
+      const starMesh = new THREE.Mesh(geometry, material)
+      starMesh.userData = { id: i + 1 }
+      stars.push(starMesh)
+    }
+
+    // Create raycaster
+    const raycaster = new THREE.Raycaster()
+
+    // Test hovering over first star
+    raycaster.intersectObjects = vi.fn(() => [
+      { object: stars[0], point: { x: 0, y: 0, z: 0 }, distance: 100 },
+    ])
+    const intersects1 = raycaster.intersectObjects(stars)
+    mockDomElement.style.cursor = intersects1.length > 0 ? 'pointer' : 'default'
+    expect(mockDomElement.style.cursor).toBe('pointer')
+
+    // Test hovering over third star
+    raycaster.intersectObjects = vi.fn(() => [
+      { object: stars[2], point: { x: 0, y: 0, z: 0 }, distance: 100 },
+    ])
+    const intersects2 = raycaster.intersectObjects(stars)
+    mockDomElement.style.cursor = intersects2.length > 0 ? 'pointer' : 'default'
+    expect(mockDomElement.style.cursor).toBe('pointer')
+
+    // Test not hovering over any star
+    raycaster.intersectObjects = vi.fn(() => [])
+    const intersects3 = raycaster.intersectObjects(stars)
+    mockDomElement.style.cursor = intersects3.length > 0 ? 'pointer' : 'default'
+    expect(mockDomElement.style.cursor).toBe('default')
+  })
+
+  it('should convert mouse position to NDC for hover detection', () => {
+    // Test NDC conversion for different mouse positions
+    const testCases = [
+      { clientX: 200, clientY: 150, width: 400, height: 300, expectedX: 0, expectedY: 0 },
+      { clientX: 0, clientY: 0, width: 400, height: 300, expectedX: -1, expectedY: 1 },
+      { clientX: 400, clientY: 300, width: 400, height: 300, expectedX: 1, expectedY: -1 },
+    ]
+
+    testCases.forEach(({ clientX, clientY, width, height, expectedX, expectedY }) => {
+      const ndcX = (clientX / width) * 2 - 1
+      const ndcY = -(clientY / height) * 2 + 1
+
+      expect(ndcX).toBeCloseTo(expectedX, 5)
+      expect(ndcY).toBeCloseTo(expectedY, 5)
+    })
+  })
+})

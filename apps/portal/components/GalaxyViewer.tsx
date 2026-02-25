@@ -314,6 +314,25 @@ export default function GalaxyViewer() {
     let isDragging = false
     let previousMousePosition = { x: 0, y: 0 }
 
+    // Helper function to check for hover and update cursor
+    const checkHover = (mouseX: number, mouseY: number) => {
+      if (!raycasterRef.current || !starsRef.current.length) {
+        domElement.style.cursor = 'default'
+        return
+      }
+
+      const raycaster = raycasterRef.current
+
+      // Update raycaster with mouse position
+      raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera)
+
+      // Raycast against all star mesh objects
+      const intersects = raycaster.intersectObjects(starsRef.current)
+
+      // Change cursor to pointer if hovering over a star, default otherwise
+      domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default'
+    }
+
     domElement.addEventListener('mousedown', (e: MouseEvent) => {
       isDragging = true
       previousMousePosition = { x: e.clientX, y: e.clientY }
@@ -325,6 +344,9 @@ export default function GalaxyViewer() {
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1
       const y = -((e.clientY - rect.top) / rect.height) * 2 + 1
       mouseRef.current = { x, y }
+
+      // Check hover and update cursor
+      checkHover(x, y)
 
       if (!isDragging) return
 
@@ -343,6 +365,8 @@ export default function GalaxyViewer() {
 
     domElement.addEventListener('mouseleave', () => {
       isDragging = false
+      // Reset cursor when leaving the canvas
+      domElement.style.cursor = 'default'
     })
 
     // Wheel zoom
