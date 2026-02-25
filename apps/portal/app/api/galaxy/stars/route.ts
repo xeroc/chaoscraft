@@ -16,10 +16,10 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "standard",
     linesChanged: 78,
     files: 3,
-    commitHash: "abc123",
+    commitHash: "abc12345",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(), // 1 day ago
     builtBy: "user1",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/1",
   },
   {
     id: 2,
@@ -34,14 +34,14 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "standard",
     linesChanged: 42,
     files: 2,
-    commitHash: "def456",
+    commitHash: "def45678",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     builtBy: "user2",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/2",
   },
   {
     id: 3,
-    issueNumber: 3,
+    issueNumber: null,
     title: "Add user profile page",
     description: "Display user information and settings",
     position: { x: 5, y: -12, z: 15 },
@@ -52,7 +52,7 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "express",
     linesChanged: 156,
     files: 5,
-    commitHash: "ghi789",
+    commitHash: "ghi78901",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
     builtBy: "user3",
     prUrl: null,
@@ -70,10 +70,10 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "priority",
     linesChanged: 98,
     files: 4,
-    commitHash: "jkl012",
+    commitHash: "jkl01234",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days ago
     builtBy: "user1",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/4",
   },
   {
     id: 5,
@@ -88,10 +88,10 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "standard",
     linesChanged: 65,
     files: 2,
-    commitHash: "mno345",
+    commitHash: "mno34567",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
     builtBy: "user4",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/5",
   },
   {
     id: 6,
@@ -106,14 +106,14 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "express",
     linesChanged: 89,
     files: 9,
-    commitHash: "a1b2c3d",
+    commitHash: "a1b2c3d4",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
     builtBy: "Claude",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/42",
   },
   {
     id: 7,
-    issueNumber: 43,
+    issueNumber: null,
     title: "Implement user authentication",
     description: "Add email/password login with JWT tokens and session management",
     position: { x: 15, y: 10, z: -15 },
@@ -124,7 +124,7 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "priority",
     linesChanged: 5,
     files: 3,
-    commitHash: "m0n1o2p",
+    commitHash: "m0n1o2p3",
     mergedAt: null,
     builtBy: "Claude",
     prUrl: null,
@@ -142,10 +142,10 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "priority",
     linesChanged: 10,
     files: 10,
-    commitHash: "q3r4s5t",
+    commitHash: "q3r4s5t6",
     mergedAt: null,
     builtBy: "Claude",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/44",
   },
   {
     id: 9,
@@ -160,10 +160,10 @@ const MOCK_STAR_DATA: StarData[] = [
     priority: "standard",
     linesChanged: 8,
     files: 8,
-    commitHash: "y9z0a1b",
+    commitHash: "y9z0a1b2",
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(), // 14 days ago
     builtBy: "Claude",
-    prUrl: null,
+    prUrl: "https://github.com/xeroc/chaoscraft/pull/45",
   },
 ]
 
