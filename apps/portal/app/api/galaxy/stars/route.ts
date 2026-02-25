@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+import { getStarsFromGitHub, StarData } from '@/lib/github'
 
-// Mock data - will be replaced with actual data from database/API later
-const MOCK_STAR_DATA = [
+// Mock data - used as fallback when no real PRs exist
+const MOCK_STAR_DATA: StarData[] = [
   {
     id: 1,
     issueNumber: 1,
@@ -15,9 +16,10 @@ const MOCK_STAR_DATA = [
     priority: "standard",
     linesChanged: 78,
     files: 3,
-    commitHash: "abc123...",
-    mergedAt: "2024-02-19T10:30:00Z",
+    commitHash: "abc123",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(), // 1 day ago
     builtBy: "user1",
+    prUrl: null,
   },
   {
     id: 2,
@@ -25,16 +27,17 @@ const MOCK_STAR_DATA = [
     title: "Add dark mode toggle",
     description: "Switch between light and dark themes",
     position: { x: -15, y: 10, z: -8 },
-    color: "green",
+    color: "blue",
     size: 5,
     brightness: 0.9,
     pulse: false,
     priority: "standard",
     linesChanged: 42,
     files: 2,
-    commitHash: "def456...",
-    mergedAt: "2024-02-19T11:45:00Z",
+    commitHash: "def456",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     builtBy: "user2",
+    prUrl: null,
   },
   {
     id: 3,
@@ -49,9 +52,10 @@ const MOCK_STAR_DATA = [
     priority: "express",
     linesChanged: 156,
     files: 5,
-    commitHash: "ghi789...",
-    mergedAt: "2024-02-19T13:00:00Z",
+    commitHash: "ghi789",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
     builtBy: "user3",
+    prUrl: null,
   },
   {
     id: 4,
@@ -66,9 +70,10 @@ const MOCK_STAR_DATA = [
     priority: "priority",
     linesChanged: 98,
     files: 4,
-    commitHash: "jkl012...",
-    mergedAt: "2024-02-19T14:15:00Z",
+    commitHash: "jkl012",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days ago
     builtBy: "user1",
+    prUrl: null,
   },
   {
     id: 5,
@@ -83,9 +88,10 @@ const MOCK_STAR_DATA = [
     priority: "standard",
     linesChanged: 65,
     files: 2,
-    commitHash: "mno345...",
-    mergedAt: "2024-02-19T15:30:00Z",
+    commitHash: "mno345",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
     builtBy: "user4",
+    prUrl: null,
   },
   {
     id: 6,
@@ -101,8 +107,9 @@ const MOCK_STAR_DATA = [
     linesChanged: 89,
     files: 9,
     commitHash: "a1b2c3d",
-    mergedAt: "2024-02-19T11:45:00Z",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
     builtBy: "Claude",
+    prUrl: null,
   },
   {
     id: 7,
@@ -120,6 +127,7 @@ const MOCK_STAR_DATA = [
     commitHash: "m0n1o2p",
     mergedAt: null,
     builtBy: "Claude",
+    prUrl: null,
   },
   {
     id: 8,
@@ -137,6 +145,7 @@ const MOCK_STAR_DATA = [
     commitHash: "q3r4s5t",
     mergedAt: null,
     builtBy: "Claude",
+    prUrl: null,
   },
   {
     id: 9,
@@ -152,8 +161,9 @@ const MOCK_STAR_DATA = [
     linesChanged: 8,
     files: 8,
     commitHash: "y9z0a1b",
-    mergedAt: "2024-02-19T10:00:00Z",
+    mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(), // 14 days ago
     builtBy: "Claude",
+    prUrl: null,
   },
 ]
 
@@ -166,8 +176,34 @@ const COLOR_MAPPINGS = {
 }
 
 export async function GET() {
-  return NextResponse.json({
-    stars: MOCK_STAR_DATA,
-    colorMappings: COLOR_MAPPINGS,
-  })
+  try {
+    // Try to fetch real stars from GitHub
+    const stars = await getStarsFromGitHub()
+    
+    // If no real PRs exist, use mock data
+    if (stars.length === 0) {
+      console.log('No merged PRs found, using mock data')
+      return NextResponse.json({
+        stars: MOCK_STAR_DATA,
+        colorMappings: COLOR_MAPPINGS,
+        source: 'mock',
+      })
+    }
+    
+    return NextResponse.json({
+      stars,
+      colorMappings: COLOR_MAPPINGS,
+      source: 'github',
+    })
+  } catch (error) {
+    console.error('Failed to fetch stars:', error)
+    
+    // Fallback to mock data on error
+    return NextResponse.json({
+      stars: MOCK_STAR_DATA,
+      colorMappings: COLOR_MAPPINGS,
+      source: 'mock',
+      error: 'Failed to fetch from GitHub',
+    })
+  }
 }
