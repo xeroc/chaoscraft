@@ -8,8 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 
 // Mock Three.js to prevent actual 3D rendering during tests
 vi.mock('three', () => ({
@@ -91,17 +90,17 @@ global.fetch = vi.fn((url) => {
         ],
         source: 'mock',
       }),
-    })
+    } as unknown as Response)
   }
   if (url === '/api/galaxy/stats') {
     return Promise.resolve({
       json: () => Promise.resolve({ total: 10, today: 2, week: 5 }),
-    })
+    } as unknown as Response)
   }
   return Promise.resolve({
     json: () => Promise.resolve({}),
-  })
-})
+  } as unknown as Response)
+}) as unknown as typeof fetch
 
 // Import GalaxyViewer after mocking
 import GalaxyViewer from '../components/GalaxyViewer'
