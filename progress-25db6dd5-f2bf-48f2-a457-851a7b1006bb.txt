@@ -1,0 +1,232 @@
+# Progress Log
+Run: 25db6dd5-f2bf-48f2-a457-851a7b1006bb
+Task: Add star click interaction to the ChaosCraft galaxy. Users should be able to click on any star in the 3D galaxy to see feature details including PR title, commit link, issue number, and files changed. Use Three.js raycasting for click detection. Implement a modal/overlay that displays the selected star's metadata when clicked.
+Started: 2025-02-25 12:03:00
+
+## Codebase Patterns
+
+### Testing
+- Project uses Vitest for testing with jsdom environment
+- Tests are located in `apps/portal/__tests__/` directory
+- Test files use `.test.tsx` extension
+- Run tests with `pnpm test:run` or `pnpm test`
+- Test config in `vitest.config.ts`
+- Mock Three.js objects with vi.mock() before importing components
+- Mock intersection objects must have point property for TypeScript
+- Mock meshes need geometry, material, position, and userData properties
+- Use vi.fn().mockImplementation() for complex mock behavior
+
+### Build & Typecheck
+- Typecheck: `pnpm typecheck` (runs tsc --noEmit)
+- Build: `pnpm build` (builds both portal and galaxy)
+- Portal app uses Next.js 16.1.6 with TypeScript 5.3.3
+- Portal component structure: `apps/portal/components/`
+
+### Three.js Usage
+- Three.js is dynamically imported in useEffect
+- Three.js version: 0.161.0
+- Scene, camera, renderer pattern used throughout
+- Uses `useRef` for Three.js objects (scene, camera, renderer, animation)
+- Stars are now created as individual THREE.Mesh objects with SphereGeometry for raycasting
+- Star metadata is stored in mesh.userData for retrieval during raycasting
+
+### Component Patterns
+- React functional components with TypeScript
+- Uses `lucide-react` for icons
+- Tailwind CSS for styling
+- Cleanup pattern: useEffect returns cleanup function that cancels animationFrame and removes DOM elements
+
+---
+
+## 2025-02-25 12:03:00 - story-1: Add Three.js raycasting infrastructure for star click detection
+- Implemented raycaster initialization with Points threshold (2) in GalaxyViewer component
+- Added mouse position tracking with normalized device coordinates (NDC) conversion
+- Implemented click event handler on Three.js canvas for raycasting
+- Set up Vitest testing framework with jsdom environment
+- Added test suite covering raycaster initialization, NDC conversion, and configuration
+- Fixed TypeScript errors in test files and vitest config
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added raycaster refs, setupClickDetection function, updated setupControls for mouse tracking)
+  - apps/portal/package.json (added vitest, @testing-library/react, jsdom)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (new test file with 9 tests)
+  - apps/portal/vitest.config.ts (new vitest configuration)
+- **Learnings:**
+  - Project uses Vitest for testing, not Jest
+  - Three.js is dynamically imported in useEffect via `import('three')`
+  - Stars are rendered as THREE.Points with BufferGeometry
+  - NDC conversion: x = (clientX / width) * 2 - 1, y = -(clientY / height) * 2 + 1
+  - Raycaster needs to use setFromCamera() with Vector2 containing NDC coordinates
+  - Vitest config needs to exclude @vitejs/plugin-react to avoid version conflicts
+  - Type checking tests requires explicit type annotations on mock constructor `this` parameters
+
+---
+
+## 2025-02-25 12:23:00 - story-2: Map star data to Three.js mesh objects for raycasting
+- Replaced Points-based star rendering with individual THREE.Mesh objects
+- Each star is now a THREE.Mesh with SphereGeometry for raycasting
+- Star metadata stored in mesh.userData (id, issueNumber, title, description, color, size, brightness, priority, linesChanged, files, commitHash, mergedAt, builtBy)
+- Star meshes stored in starsRef.current array for raycasting intersection tests
+- Added glow effect for larger stars (size > 2) using larger, transparent sphere meshes
+- Updated setupClickDetection to work with mesh objects and retrieve metadata from userData
+- Enhanced cleanup to properly dispose of all mesh geometries and materials
+- Added tests for star mesh creation, metadata storage, and cleanup
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (replaced createStars with mesh-based implementation, updated click detection, enhanced cleanup)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added 5 tests for star mesh creation)
+- **Learnings:**
+  - Individual meshes allow metadata storage in userData for raycasting
+  - SphereGeometry with radius = size * 0.5 creates visible star points
+  - Glow effect achieved by adding larger transparent sphere around main star mesh
+  - Cleanup must dispose both geometry and material for each mesh to prevent memory leaks
+  - Raycaster works with Mesh objects just like Points, but provides direct access to userData
+
+---
+## 2025-02-25 12:44:00 - story-3: Implement click-to-select functionality with raycasting
+- Added clear selection logic when clicking on empty space
+- Updated setupClickDetection to setSelectedStar(null) when no intersections found
+- Added comprehensive tests for click detection logic:
+  - Finding intersected star meshes
+  - Handling empty intersections
+  - Extracting metadata from first intersected star
+  - Handling multiple intersections (using first one)
+  - Handling meshes without userData
+- All acceptance criteria met:
+  1. On canvas click, raycaster finds intersected star meshes ✓
+  2. First intersected star's metadata is extracted from mesh.userData ✓
+  3. selectedStar state is updated with the clicked star's data ✓
+  4. Clicks on empty space clear the selection ✓
+  5. Typecheck passes ✓
+  6. Tests for click detection logic pass ✓
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added else branch to clear selection)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added 5 tests for click detection logic)
+- **Learnings:**
+  - Click on empty space is handled by checking if intersects.length === 0
+  - Selection clearing uses setSelectedStar(null) which hides the modal
+  - Tests for click detection must mock raycaster.intersectObjects return values
+  - TypeScript strict mode requires proper typing of mock intersection objects
+  - Mock meshes for tests need proper structure (geometry, material, position, userData)
+
+---
+
+## 2026-02-25 13:23:00 - story-4: Enhance modal to display PR title, commit link, and issue number (fix)
+- Fixed typecheck issues in StarModal.test.tsx:
+  - Removed unused @testing-library/user-event import on line 12
+  - Added proper typing to global.fetch mock with `as unknown as Response` casts
+- All 35 tests pass (19 GalaxyViewer + 16 StarModal tests)
+- Typecheck passes
+- Files changed:
+  - apps/portal/__tests__/StarModal.test.tsx (removed unused import, added proper typing to fetch mock)
+- **Learnings:**
+  - TypeScript strict mode requires unused imports to be removed
+  - global.fetch mock returns plain objects with json() method, but TypeScript expects Response type
+  - Use `as unknown as Response` cast to satisfy TypeScript when mocking fetch with custom return shape
+  - Test hygiene is important for typecheck to pass
+
+---
+
+## 2026-02-25 14:16 GMT+1 - story-6: Add visual feedback for selected star
+- Added visual selection feedback when a star is clicked:
+  - Scale animation: selected star scales up to 2.5x with smooth lerp transition
+  - Selection ring: white torus (TorusGeometry) rendered around selected star
+  - Ring rotation animation for visual effect (rotates on z and x axes)
+- Added selection state management:
+  - `selectedMeshRef` tracks the currently selected mesh
+  - `selectionRingRef` tracks the selection ring mesh
+  - `targetScaleRef` controls the target scale for animation
+- Selection clearing:
+  - Click on empty space clears selection visual and state
+  - Modal close button clears selection via `clearSelection()` function
+  - Click on modal backdrop (outside modal content) also clears selection
+- Added `clearSelection()` function that:
+  - Removes selection ring from scene and disposes geometry/material
+  - Resets selected mesh scale to 1
+  - Clears selectedStar state
+- Added cleanup in useEffect for selection ring disposal
+- Added 8 new tests for selection visual state (53 total tests):
+  - Tests for selection ring creation
+  - Tests for scale animation with smooth lerp transition
+  - Tests for scale reset on deselection
+  - Tests for ring geometry/material disposal
+  - Tests for ring rotation animation
+  - Tests for ring positioning at star location
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added selection refs, clearSelection function, selection visual in click handler, animate loop scale animation)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added TorusGeometry mock, Selection Visual State test suite)
+- All acceptance criteria met:
+  1. Selected star mesh has a distinct visual state (scale + glow ring) ✓
+  2. Selection state is cleared when clicking elsewhere or closing modal ✓
+  3. Visual feedback is smooth with animation transition ✓
+  4. Typecheck passes ✓
+  5. Tests for selection visual state pass ✓
+- **Learnings:**
+  - Three.js TorusGeometry for selection rings: radius * 2.5 creates visible ring
+  - Lerp animation for smooth scale: `current + (target - current) * 0.08`
+  - Selection ring needs its own rotation animation for visual effect
+  - Clear selection function must dispose geometry AND material to prevent memory leaks
+  - Modal backdrop click detection: `if (e.target === e.currentTarget)` for outside-click
+
+---
+
+## 2026-02-25 13:52 GMT+1 - story-5: Add files changed list to star detail modal
+- Extended StarData interface with `filesChanged: FileChange[]` containing path, additions, deletions
+- Files are sorted by lines changed (descending) in `transformPRToStar` function
+- Modal displays up to 10 files with 'show more' toggle for additional files
+- Each file shows additions (+) in green and deletions (-) in red
+- prUrl is used to link to the full PR on GitHub with external link icon
+- Added `showAllFiles` state to track expanded/collapsed state
+- Updated mock data with realistic filesChanged arrays (3-10 files per PR)
+- Files stored in mesh.userData for raycasting access
+- Added 11 new tests covering file list functionality (46 total tests)
+- Files changed:
+  - apps/portal/lib/github.ts (added FileChange interface, filesChanged field, sorting logic)
+  - apps/portal/components/GalaxyViewer.tsx (added files list to modal, showAllFiles state)
+  - apps/portal/app/api/galaxy/stars/route.ts (updated mock data with filesChanged)
+  - apps/portal/__tests__/StarModal.test.tsx (added Files Changed List test suite)
+- All acceptance criteria met:
+  1. Modal displays list of files changed (up to 10, with 'show more' if needed) ✓
+  2. Each file shows additions (+) and deletions (-) counts ✓
+  3. Files are sorted by lines changed (descending) ✓
+  4. prUrl is used to link to the full PR on GitHub ✓
+  5. Typecheck passes ✓
+  6. Tests for files list rendering pass ✓
+- **Learnings:**
+  - Modal scrollable area: use `max-h-48 overflow-y-auto` for scrollable file list
+  - Toggle state should reset when selecting a new star (setShowAllFiles(false))
+  - File path truncation: use `truncate flex-1 mr-2` with title attribute for full path tooltip
+  - FilesChanged array needs to be included in userData when creating star meshes
+  - Sorting logic: `(b.additions + b.deletions) - (a.additions + a.deletions)` for descending
+
+---
+
+## 2026-02-25 14:28 GMT+1 - story-7: Add hover cursor change for interactive stars
+- Added hover cursor change functionality to indicate clickable stars:
+  - Added `checkHover()` helper function in setupControls to detect hover state
+  - Cursor changes to 'pointer' when raycaster intersects star meshes
+  - Cursor reverts to 'default' when not hovering over any star
+  - Cursor resets to 'default' on mouse leave event
+  - Uses same raycasting infrastructure as click detection (raycasterRef, mouseRef)
+- Added 6 new tests for cursor hover state (59 total tests):
+  - Test for cursor change to pointer when hovering over a star mesh
+  - Test for cursor reverting to default when not hovering over any star
+  - Test for using same raycasting infrastructure for hover detection
+  - Test for cursor reset on mouse leave
+  - Test for handling hover state changes with multiple stars
+  - Test for NDC conversion in hover detection
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added checkHover function, mousemove cursor update, mouseleave cursor reset)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (added Cursor Hover State test suite with 6 tests)
+- All acceptance criteria met:
+  1. Cursor changes to 'pointer' when hovering over a star mesh ✓
+  2. Cursor reverts to 'default' when not hovering over any star ✓
+  3. Hover detection uses the same raycasting infrastructure ✓
+  4. Typecheck passes ✓
+  5. Tests for cursor state changes pass ✓
+- **Learnings:**
+  - Cursor style can be set via `domElement.style.cursor = 'pointer' | 'default'`
+  - Hover detection should be checked in the mousemove handler after updating mouse position
+  - Mouse leave event handler should reset cursor to default for consistent UX
+  - Raycaster.intersectObjects returns array; check `intersects.length > 0` for hover state
+  - Tests for cursor state need mock domElement with `style` property
+
+---

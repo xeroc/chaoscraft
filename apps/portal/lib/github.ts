@@ -107,6 +107,12 @@ function calculateSize(linesChanged: number): number {
   return size
 }
 
+export interface FileChange {
+  path: string
+  additions: number
+  deletions: number
+}
+
 export interface StarData {
   id: number
   issueNumber: number | null
@@ -124,6 +130,7 @@ export interface StarData {
   mergedAt: string | null
   builtBy: string
   prUrl: string | null
+  filesChanged: FileChange[]
 }
 
 export interface GitHubPR {
@@ -221,6 +228,11 @@ export function transformPRToStar(pr: GitHubPR, index: number): StarData {
   // Determine priority from labels (would need to fetch separately, default to standard)
   const priority = 'standard'
   
+  // Sort files by total lines changed (descending)
+  const filesChanged = [...pr.files].sort((a, b) =>
+    (b.additions + b.deletions) - (a.additions + a.deletions)
+  )
+
   return {
     id: index + 1,
     issueNumber,
@@ -238,6 +250,7 @@ export function transformPRToStar(pr: GitHubPR, index: number): StarData {
     mergedAt: pr.mergedAt,
     builtBy: pr.author?.login || 'Unknown',
     prUrl: pr.url,
+    filesChanged,
   }
 }
 
