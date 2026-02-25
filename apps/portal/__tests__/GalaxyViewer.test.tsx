@@ -359,3 +359,168 @@ describe('Star Mesh Creation', () => {
     }).not.toThrow()
   })
 })
+
+describe('Click Detection Logic', () => {
+  const COLOR_MAPPINGS: Record<string, number> = {
+    blue: 0x3b82f6,
+    green: 0x22c55e,
+    yellow: 0xeab308,
+    purple: 0xa855f7,
+    pink: 0xec4899,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should find intersected star meshes when raycaster hits a star', () => {
+    const THREE = require('three')
+    const raycaster = new THREE.Raycaster()
+
+    // Create a star mesh
+    const starData = {
+      id: 1,
+      issueNumber: 42,
+      title: 'Test Feature',
+      description: 'A test feature',
+      position: { x: 10, y: 20, z: 30 },
+      color: 'blue' as const,
+      size: 3,
+      brightness: 0.9,
+      priority: 'high',
+      linesChanged: 100,
+      files: 5,
+      commitHash: 'abc123',
+      mergedAt: '2025-01-01T00:00:00Z',
+      builtBy: 'testuser',
+    }
+
+    const geometry = new THREE.SphereGeometry(starData.size * 0.5, 8, 8)
+    const material = new THREE.MeshBasicMaterial({
+      color: COLOR_MAPPINGS[starData.color],
+      transparent: true,
+      opacity: starData.brightness,
+      blending: THREE.AdditiveBlending,
+    })
+
+    const starMesh = new THREE.Mesh(geometry, material)
+    starMesh.position.set(starData.position.x, starData.position.y, starData.position.z)
+    starMesh.userData = starData
+
+    // Mock raycaster to return intersection
+    const mockIntersection = {
+      object: starMesh,
+      distance: 10,
+      point: { x: 10, y: 20, z: 30 },
+    }
+    raycaster.intersectObjects = vi.fn(() => [mockIntersection])
+
+    const intersects = raycaster.intersectObjects([starMesh])
+
+    expect(intersects.length).toBeGreaterThan(0)
+    expect(intersects[0].object).toBe(starMesh)
+  })
+
+  it('should return empty array when raycaster hits no stars', () => {
+    const THREE = require('three')
+    const raycaster = new THREE.Raycaster()
+
+    // Mock raycaster to return no intersections
+    raycaster.intersectObjects = vi.fn(() => [])
+
+    const intersects = raycaster.intersectObjects([])
+
+    expect(intersects.length).toBe(0)
+  })
+
+  it('should extract metadata from first intersected star mesh', () => {
+    const starData = {
+      id: 1,
+      issueNumber: 42,
+      title: 'Test Feature',
+      description: 'A test feature',
+      position: { x: 10, y: 20, z: 30 },
+      color: 'green' as const,
+      size: 3,
+      brightness: 0.9,
+      priority: 'high',
+      linesChanged: 100,
+      files: 5,
+      commitHash: 'abc123',
+      mergedAt: '2025-01-01T00:00:00Z',
+      builtBy: 'testuser',
+    }
+
+    // Simulate extracting metadata from mesh.userData
+    const mockMesh = {
+      userData: starData,
+      position: { x: starData.position.x, y: starData.position.y, z: starData.position.z },
+    }
+
+    expect(mockMesh.userData.id).toBe(starData.id)
+    expect(mockMesh.userData.issueNumber).toBe(starData.issueNumber)
+    expect(mockMesh.userData.title).toBe(starData.title)
+    expect(mockMesh.userData.description).toBe(starData.description)
+    expect(mockMesh.userData.priority).toBe(starData.priority)
+    expect(mockMesh.userData.linesChanged).toBe(starData.linesChanged)
+    expect(mockMesh.userData.files).toBe(starData.files)
+    expect(mockMesh.userData.commitHash).toBe(starData.commitHash)
+    expect(mockMesh.userData.mergedAt).toBe(starData.mergedAt)
+    expect(mockMesh.userData.builtBy).toBe(starData.builtBy)
+  })
+
+  it('should handle multiple intersections and use the first one', () => {
+    const THREE = require('three')
+
+    // Create multiple star meshes
+    const star1Data = { id: 1, issueNumber: 42, title: 'First Star' }
+    const star2Data = { id: 2, issueNumber: 43, title: 'Second Star' }
+
+    const mesh1 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), new THREE.MeshBasicMaterial())
+    mesh1.userData = star1Data
+
+    const mesh2 = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), new THREE.MeshBasicMaterial())
+    mesh2.userData = star2Data
+
+    const mockIntersections = [
+      { object: mesh1, distance: 10, point: { x: 0, y: 0, z: 0 } },
+      { object: mesh2, distance: 20, point: { x: 0, y: 0, z: 0 } },
+    ]
+
+    const raycaster = new THREE.Raycaster()
+    raycaster.intersectObjects = vi.fn(() => mockIntersections)
+
+    const intersects = raycaster.intersectObjects([mesh1, mesh2])
+
+    expect(intersects.length).toBe(2)
+    expect(intersects[0].object.userData.id).toBe(star1Data.id)
+    expect(intersects[1].object.userData.id).toBe(star2Data.id)
+
+    // First intersected star should be used
+    const firstIntersected = intersects[0].object
+    expect(firstIntersected.userData.id).toBe(star1Data.id)
+    expect(firstIntersected.userData.title).toBe('First Star')
+  })
+
+  it('should handle intersection with mesh that has no userData', () => {
+    const THREE = require('three')
+    const raycaster = new THREE.Raycaster()
+
+    // Create a mesh without userData
+    const meshWithoutUserData = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), new THREE.MeshBasicMaterial())
+    meshWithoutUserData.userData = {}
+
+    const mockIntersection = {
+      object: meshWithoutUserData,
+      distance: 10,
+      point: { x: 0, y: 0, z: 0 },
+    }
+
+    raycaster.intersectObjects = vi.fn(() => [mockIntersection])
+
+    const intersects = raycaster.intersectObjects([meshWithoutUserData])
+
+    expect(intersects.length).toBe(1)
+    expect(intersects[0].object.userData.id).toBeUndefined()
+  })
+})

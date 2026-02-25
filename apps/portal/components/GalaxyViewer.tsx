@@ -375,6 +375,9 @@ export default function GalaxyViewer() {
           }
           setSelectedStar(selectedStarData)
         }
+      } else {
+        // Click on empty space - clear selection
+        setSelectedStar(null)
       }
     })
   }
