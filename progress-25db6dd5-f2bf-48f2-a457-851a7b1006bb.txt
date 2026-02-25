@@ -108,3 +108,50 @@ Started: 2025-02-25 12:03:00
   - Mock meshes for tests need proper structure (geometry, material, position, userData)
 
 ---
+
+## 2026-02-25 13:23:00 - story-4: Enhance modal to display PR title, commit link, and issue number (fix)
+- Fixed typecheck issues in StarModal.test.tsx:
+  - Removed unused @testing-library/user-event import on line 12
+  - Added proper typing to global.fetch mock with `as unknown as Response` casts
+- All 35 tests pass (19 GalaxyViewer + 16 StarModal tests)
+- Typecheck passes
+- Files changed:
+  - apps/portal/__tests__/StarModal.test.tsx (removed unused import, added proper typing to fetch mock)
+- **Learnings:**
+  - TypeScript strict mode requires unused imports to be removed
+  - global.fetch mock returns plain objects with json() method, but TypeScript expects Response type
+  - Use `as unknown as Response` cast to satisfy TypeScript when mocking fetch with custom return shape
+  - Test hygiene is important for typecheck to pass
+
+---
+
+## 2026-02-25 13:52 GMT+1 - story-5: Add files changed list to star detail modal
+- Extended StarData interface with `filesChanged: FileChange[]` containing path, additions, deletions
+- Files are sorted by lines changed (descending) in `transformPRToStar` function
+- Modal displays up to 10 files with 'show more' toggle for additional files
+- Each file shows additions (+) in green and deletions (-) in red
+- prUrl is used to link to the full PR on GitHub with external link icon
+- Added `showAllFiles` state to track expanded/collapsed state
+- Updated mock data with realistic filesChanged arrays (3-10 files per PR)
+- Files stored in mesh.userData for raycasting access
+- Added 11 new tests covering file list functionality (46 total tests)
+- Files changed:
+  - apps/portal/lib/github.ts (added FileChange interface, filesChanged field, sorting logic)
+  - apps/portal/components/GalaxyViewer.tsx (added files list to modal, showAllFiles state)
+  - apps/portal/app/api/galaxy/stars/route.ts (updated mock data with filesChanged)
+  - apps/portal/__tests__/StarModal.test.tsx (added Files Changed List test suite)
+- All acceptance criteria met:
+  1. Modal displays list of files changed (up to 10, with 'show more' if needed) ✓
+  2. Each file shows additions (+) and deletions (-) counts ✓
+  3. Files are sorted by lines changed (descending) ✓
+  4. prUrl is used to link to the full PR on GitHub ✓
+  5. Typecheck passes ✓
+  6. Tests for files list rendering pass ✓
+- **Learnings:**
+  - Modal scrollable area: use `max-h-48 overflow-y-auto` for scrollable file list
+  - Toggle state should reset when selecting a new star (setShowAllFiles(false))
+  - File path truncation: use `truncate flex-1 mr-2` with title attribute for full path tooltip
+  - FilesChanged array needs to be included in userData when creating star meshes
+  - Sorting logic: `(b.additions + b.deletions) - (a.additions + a.deletions)` for descending
+
+---
