@@ -32,3 +32,26 @@ Started: 2025-02-25 12:03:00
 - Cleanup pattern: useEffect returns cleanup function that cancels animationFrame and removes DOM elements
 
 ---
+
+## 2025-02-25 12:03:00 - story-1: Add Three.js raycasting infrastructure for star click detection
+- Implemented raycaster initialization with Points threshold (2) in GalaxyViewer component
+- Added mouse position tracking with normalized device coordinates (NDC) conversion
+- Implemented click event handler on Three.js canvas for raycasting
+- Set up Vitest testing framework with jsdom environment
+- Added test suite covering raycaster initialization, NDC conversion, and configuration
+- Fixed TypeScript errors in test files and vitest config
+- Files changed:
+  - apps/portal/components/GalaxyViewer.tsx (added raycaster refs, setupClickDetection function, updated setupControls for mouse tracking)
+  - apps/portal/package.json (added vitest, @testing-library/react, jsdom)
+  - apps/portal/__tests__/GalaxyViewer.test.tsx (new test file with 9 tests)
+  - apps/portal/vitest.config.ts (new vitest configuration)
+- **Learnings:**
+  - Project uses Vitest for testing, not Jest
+  - Three.js is dynamically imported in useEffect via `import('three')`
+  - Stars are rendered as THREE.Points with BufferGeometry
+  - NDC conversion: x = (clientX / width) * 2 - 1, y = -(clientY / height) * 2 + 1
+  - Raycaster needs to use setFromCamera() with Vector2 containing NDC coordinates
+  - Vitest config needs to exclude @vitejs/plugin-react to avoid version conflicts
+  - Type checking tests requires explicit type annotations on mock constructor `this` parameters
+
+---
