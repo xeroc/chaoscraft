@@ -10,7 +10,10 @@
     "build:galaxy": "pnpm --filter galaxy build",
     "clean": "rm -rf node_modules **/node_modules",
     "lint": "pnpm --filter portal lint",
-    "typecheck": "pnpm --filter portal typecheck"
+    "typecheck": "pnpm --filter portal typecheck",
+    "sync:build": "pnpm --filter sync-github build",
+    "sync:start": "cd apps/sync-github && node dist/sync-github-issues.js",
+    "sync:dev": "pnpm --filter sync-github dev"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
