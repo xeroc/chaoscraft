@@ -31,7 +31,7 @@ async function createIssueAndUpdateDb(paymentDbId: number, requestText: string, 
     owner: process.env.GITHUB_OWNER!,
     repo: process.env.GITHUB_REPO!,
     title: requestText,
-    body: `## Feature Request\n\n${requestText}\n\n### Priority\n${priority}\n\n---\n*Submitted via repo.fun*\n\nPayment verified via Stripe.`,
+    body: `## Feature Request\n\n${requestText}\n\n### Priority\n${priority}\n\n---\n*Submitted via chaoscraft*\n\nPayment verified via Stripe.`,
     labels: ['ready-for-build', priority === 'standard' ? '' : `priority:${priority}`].filter(Boolean),
   })
 

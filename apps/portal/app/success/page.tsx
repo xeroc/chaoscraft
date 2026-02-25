@@ -76,7 +76,7 @@ function SuccessContent() {
         <div className="mt-6 pt-6 border-t border-white/10">
           <p className="text-sm text-blue-300/70">
             Watch your star be built in real-time at the{' '}
-            <a href="https://github.com/repofun/repofun/issues" className="text-blue-400 hover:underline flex items-center justify-center gap-1 mt-2">
+            <a href="https://github.com/chaoscraft/chaoscraft/issues" className="text-blue-400 hover:underline flex items-center justify-center gap-1 mt-2">
               <ExternalLink className="w-3 h-3" />
               GitHub Issue Tracker
             </a>

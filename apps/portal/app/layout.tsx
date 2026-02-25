@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'repo.fun - Pay $1, Watch AI Build Chaos',
+  title: 'chaoscraft - Pay $1, Watch AI Build Chaos',
   description: 'The first crowd-sourced AI-powered codebase. Pay $1, submit a 120-character request, and watch as AI agents turn your idea into code that becomes a star in the galaxy.',
 }
 

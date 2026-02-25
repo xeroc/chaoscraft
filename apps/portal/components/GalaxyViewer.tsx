@@ -1,12 +1,306 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 
+interface StarData {
+  id: number
+  issueNumber: number
+  title: string
+  description: string
+  position: { x: number; y: number; z: number }
+  color: 'blue' | 'green' | 'yellow' | 'purple' | 'pink'
+  size: number
+  brightness: number
+  pulse: boolean
+  priority: string
+  linesChanged: number
+  files: number
+  commitHash: string
+  mergedAt: string | null
+  builtBy: string
+}
+
 export default function GalaxyViewer() {
-  const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [starData, setStarData] = useState<StarData[]>([])
+  const [stats, setStats] = useState({ total: 0, today: 0, week: 0 })
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [selectedStar, setSelectedStar] = useState<StarData | null>(null)
+
+  // Three.js refs
+  const sceneRef = useRef<any>(null)
+  const cameraRef = useRef<any>(null)
+  const rendererRef = useRef<any>(null)
+  const animationRef = useRef<number>()
+  const starsRef = useRef<any>([])
+
+  const CONFIG = {
+    cameraDistance: 150,
+    minDistance: 20,
+    maxDistance: 300,
+    rotationSpeed: 0.0005,
+  }
+
+  // Fetch star data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [starsRes, statsRes] = await Promise.all([
+          fetch('/api/galaxy/stars'),
+          fetch('/api/galaxy/stats'),
+        ])
+
+        const starsData = await starsRes.json()
+        const statsData = await statsRes.json()
+
+        setStarData(starsData.stars || [])
+        setStats(statsData)
+      } catch (error) {
+        console.error('Failed to fetch galaxy data:', error)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Initialize Three.js scene
+  useEffect(() => {
+    if (!containerRef.current || starData.length === 0) return
+
+    // Load Three.js dynamically
+    const loadThreeJS = async () => {
+      const THREE = await import('three')
+
+      // Scene
+      const scene = new THREE.Scene()
+      scene.fog = new THREE.FogExp2(0x000000, 0.002)
+      sceneRef.current = scene
+
+      // Camera
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        containerRef.current!.clientWidth / containerRef.current!.clientHeight,
+        0.1,
+        1000
+      )
+      camera.position.set(0, 0, CONFIG.cameraDistance)
+      cameraRef.current = camera
+
+      // Renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+      renderer.setSize(
+        containerRef.current!.clientWidth,
+        containerRef.current!.clientHeight
+      )
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      rendererRef.current = renderer
+
+      containerRef.current!.appendChild(renderer.domElement)
+
+      // Create stars
+      createStars(THREE, scene)
+
+      // Add background particles
+      createBackgroundParticles(THREE, scene)
+
+      // Add ambient light
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.5)
+      scene.add(ambientLight)
+
+      // Add point light
+      const pointLight = new THREE.PointLight(0xffffff, 1, 500)
+      pointLight.position.set(0, 0, 0)
+      scene.add(pointLight)
+
+      // Setup mouse controls
+      setupControls(THREE, renderer.domElement, camera, scene)
+
+      // Start animation
+      animate(THREE, scene, camera, renderer)
+    }
+
+    loadThreeJS()
+
+    // Cleanup
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+      if (rendererRef.current) {
+        rendererRef.current.dispose()
+        if (containerRef.current && rendererRef.current.domElement) {
+          containerRef.current.removeChild(rendererRef.current.domElement)
+        }
+      }
+    }
+  }, [starData])
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current || !cameraRef.current || !rendererRef.current) return
+
+      const width = containerRef.current.clientWidth
+      const height = containerRef.current.clientHeight
+
+      cameraRef.current.aspect = width / height
+      cameraRef.current.updateProjectionMatrix()
+      rendererRef.current.setSize(width, height)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const createStars = (THREE: any, scene: any) => {
+    if (starData.length === 0) return
+
+    const COLOR_MAPPINGS = {
+      blue: 0x3b82f6,
+      green: 0x22c55e,
+      yellow: 0xeab308,
+      purple: 0xa855f7,
+      pink: 0xec4899,
+    }
+
+    const starGeometry = new THREE.BufferGeometry()
+    const positions: number[] = []
+    const colors: number[] = []
+    const sizes: number[] = []
+
+    starData.forEach((starDataItem) => {
+      const { x, y, z } = starDataItem.position
+      positions.push(x, y, z)
+
+      // Color
+      const color = new THREE.Color(
+        COLOR_MAPPINGS[starDataItem.color] || 0xffffff
+      )
+      colors.push(color.r, color.g, color.b)
+
+      // Size
+      sizes.push(starDataItem.size)
+    })
+
+    starGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    )
+    starGeometry.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(colors, 3)
+    )
+    starGeometry.setAttribute(
+      'size',
+      new THREE.Float32BufferAttribute(sizes, 1)
+    )
+
+    const starMaterial = new THREE.PointsMaterial({
+      size: 3,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+    })
+
+    const starPoints = new THREE.Points(starGeometry, starMaterial)
+    scene.add(starPoints)
+    starsRef.current.push(starPoints)
+  }
+
+  const createBackgroundParticles = (THREE: any, scene: any) => {
+    const particleCount = 2000
+    const geometry = new THREE.BufferGeometry()
+    const positions: number[] = []
+
+    for (let i = 0; i < particleCount; i++) {
+      const x = (Math.random() - 0.5) * 500
+      const y = (Math.random() - 0.5) * 500
+      const z = (Math.random() - 0.5) * 500
+      positions.push(x, y, z)
+    }
+
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    )
+
+    const material = new THREE.PointsMaterial({
+      size: 0.5,
+      color: 0x888888,
+      transparent: true,
+      opacity: 0.3,
+      blending: THREE.AdditiveBlending,
+    })
+
+    const particles = new THREE.Points(geometry, material)
+    scene.add(particles)
+    starsRef.current.push(particles)
+  }
+
+  const setupControls = (
+    THREE: any,
+    domElement: HTMLElement,
+    camera: any,
+    scene: any
+  ) => {
+    let isDragging = false
+    let previousMousePosition = { x: 0, y: 0 }
+
+    domElement.addEventListener('mousedown', (e: MouseEvent) => {
+      isDragging = true
+      previousMousePosition = { x: e.clientX, y: e.clientY }
+    })
+
+    domElement.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!isDragging) return
+
+      const deltaX = e.clientX - previousMousePosition.x
+      const deltaY = e.clientY - previousMousePosition.y
+
+      scene.rotation.y += deltaX * 0.005
+      scene.rotation.x += deltaY * 0.005
+
+      previousMousePosition = { x: e.clientX, y: e.clientY }
+    })
+
+    domElement.addEventListener('mouseup', () => {
+      isDragging = false
+    })
+
+    domElement.addEventListener('mouseleave', () => {
+      isDragging = false
+    })
+
+    // Wheel zoom
+    domElement.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomSpeed = 0.1
+
+      camera.position.z += delta * zoomSpeed
+      camera.position.z = Math.max(
+        CONFIG.minDistance,
+        Math.min(CONFIG.maxDistance, camera.position.z)
+      )
+    })
+  }
+
+  const animate = (THREE: any, scene: any, camera: any, renderer: any) => {
+    const animationLoop = () => {
+      // Auto-rotate
+      if (sceneRef.current) {
+        sceneRef.current.rotation.y += CONFIG.rotationSpeed
+      }
+
+      renderer.render(scene, camera)
+      animationRef.current = requestAnimationFrame(animationLoop)
+    }
+
+    animationRef.current = requestAnimationFrame(animationLoop)
+  }
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -24,17 +318,34 @@ export default function GalaxyViewer() {
 
   useEffect(() => {
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
   const refreshGalaxy = () => {
-    if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src
+    // Reload star data
+    const fetchData = async () => {
+      try {
+        const [starsRes, statsRes] = await Promise.all([
+          fetch('/api/galaxy/stars'),
+          fetch('/api/galaxy/stats'),
+        ])
+
+        const starsData = await starsRes.json()
+        const statsData = await statsRes.json()
+
+        setStarData(starsData.stars || [])
+        setStats(statsData)
+      } catch (error) {
+        console.error('Failed to refresh galaxy data:', error)
+      }
     }
+
+    fetchData()
   }
 
   return (
-    <div ref={containerRef} className="relative h-full">
+    <div className="relative h-full">
       {/* Controls */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <button
@@ -53,15 +364,105 @@ export default function GalaxyViewer() {
         </button>
       </div>
 
-      {/* Galaxy Iframe */}
-      <iframe
-        ref={iframeRef}
-        src="/galaxy"
-        className="w-full h-full border-0"
-        title="ChaosCraft Galaxy"
-        allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      />
+      {/* Stats Display */}
+      <div className="absolute top-4 left-4 z-10 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4">
+        <div className="flex gap-6 text-sm">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">{stats.total}</div>
+            <div className="text-blue-300/70">Total</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">{stats.today}</div>
+            <div className="text-blue-300/70">Today</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">{stats.week}</div>
+            <div className="text-blue-300/70">Week</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Galaxy Container */}
+      <div ref={containerRef} className="w-full h-full" />
+
+      {/* Selected Star Modal */}
+      {selectedStar && (
+        <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-6 max-w-lg w-full">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-1">
+                  #{selectedStar.issueNumber} {selectedStar.title}
+                </h3>
+                <p className="text-blue-200/70">{selectedStar.description}</p>
+              </div>
+              <button
+                onClick={() => setSelectedStar(null)}
+                className="text-white/70 hover:text-white text-2xl"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-blue-300/70 mb-1">Built By</div>
+                <div className="text-white font-semibold">{selectedStar.builtBy}</div>
+              </div>
+              <div>
+                <div className="text-blue-300/70 mb-1">Files Changed</div>
+                <div className="text-white font-semibold">{selectedStar.files}</div>
+              </div>
+              <div>
+                <div className="text-blue-300/70 mb-1">Lines Changed</div>
+                <div className="text-white font-semibold">{selectedStar.linesChanged}</div>
+              </div>
+              <div>
+                <div className="text-blue-300/70 mb-1">Priority</div>
+                <div className="text-white font-semibold capitalize">{selectedStar.priority}</div>
+              </div>
+            </div>
+            {selectedStar.mergedAt && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="text-blue-300/70 mb-1">Merged At</div>
+                <div className="text-white">
+                  {new Date(selectedStar.mergedAt).toLocaleString()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="absolute bottom-4 right-4 z-10 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4">
+        <div className="text-xs font-semibold text-white mb-2">Feature Types</div>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span className="text-white/70">UI Features</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="text-white/70">Logic & APIs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span className="text-white/70">Data & Models</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+            <span className="text-white/70">Infrastructure</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+            <span className="text-white/70">Tests</span>
+          </div>
+        </div>
+        <div className="text-xs font-semibold text-white mt-3 mb-2">Controls</div>
+        <div className="text-xs text-white/70">
+          Drag to rotate • Scroll to zoom
+        </div>
+      </div>
     </div>
   )
 }

@@ -41,7 +41,7 @@ async function createGitHubIssue(requestText: string, priority: string): Promise
     },
     body: JSON.stringify({
       title: requestText,
-      body: `## Feature Request\n\n${requestText}\n\n### Priority\n${priority}\n\n---\n*Submitted via repo.fun*`,
+      body: `## Feature Request\n\n${requestText}\n\n### Priority\n${priority}\n\n---\n*Submitted via chaoscraft*`,
       labels: ['awaiting-payment'],
     }),
   })
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
               product_data: {
                 name: 'ChaosCraft Feature Request',
                 description: `Priority: ${body.priority}\nRequest: ${body.request}`,
-                images: ['https://repo.fun/og-image.png'],
+                images: ['https://chaoscraft/og-image.png'],
               },
               unit_amount: amountInCents,
             },
