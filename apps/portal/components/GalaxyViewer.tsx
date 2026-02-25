@@ -35,6 +35,10 @@ export default function GalaxyViewer() {
   const animationRef = useRef<number>()
   const starsRef = useRef<any>([])
 
+  // Raycaster refs
+  const raycasterRef = useRef<any>(null)
+  const mouseRef = useRef({ x: 0, y: 0 })
+
   const CONFIG = {
     cameraDistance: 150,
     minDistance: 20,
@@ -113,8 +117,16 @@ export default function GalaxyViewer() {
       pointLight.position.set(0, 0, 0)
       scene.add(pointLight)
 
+      // Initialize raycaster
+      const raycaster = new THREE.Raycaster()
+      raycaster.params.Points.threshold = 2
+      raycasterRef.current = raycaster
+
       // Setup mouse controls
       setupControls(THREE, renderer.domElement, camera, scene)
+
+      // Setup click detection
+      setupClickDetection(THREE, renderer.domElement, camera, scene)
 
       // Start animation
       animate(THREE, scene, camera, renderer)
@@ -255,6 +267,12 @@ export default function GalaxyViewer() {
     })
 
     domElement.addEventListener('mousemove', (e: MouseEvent) => {
+      // Update mouse position for raycasting (normalized device coordinates)
+      const rect = domElement.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+      mouseRef.current = { x, y }
+
       if (!isDragging) return
 
       const deltaX = e.clientX - previousMousePosition.x
@@ -285,6 +303,44 @@ export default function GalaxyViewer() {
         CONFIG.minDistance,
         Math.min(CONFIG.maxDistance, camera.position.z)
       )
+    })
+  }
+
+  const setupClickDetection = (
+    THREE: any,
+    domElement: HTMLElement,
+    camera: any,
+    scene: any
+  ) => {
+    domElement.addEventListener('click', (e: MouseEvent) => {
+      if (!raycasterRef.current || !starsRef.current.length) return
+
+      const raycaster = raycasterRef.current
+      const mouse = mouseRef.current
+
+      // Update raycaster with mouse position
+      raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera)
+
+      // Raycast against all star objects
+      const allStars: any[] = []
+      starsRef.current.forEach((starGroup: any) => {
+        if (starGroup instanceof THREE.Points) {
+          allStars.push(starGroup)
+        }
+      })
+
+      const intersects = raycaster.intersectObjects(allStars)
+
+      if (intersects.length > 0) {
+        // Find which star was clicked
+        const intersect = intersects[0]
+        const points = intersect.object as THREE.Points
+        const index = intersect.index
+
+        if (index !== undefined && index >= 0 && index < starData.length) {
+          setSelectedStar(starData[index])
+        }
+      }
     })
   }
 

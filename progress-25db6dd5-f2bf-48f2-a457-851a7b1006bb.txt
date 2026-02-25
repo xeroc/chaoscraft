@@ -1,0 +1,34 @@
+# Progress Log
+Run: 25db6dd5-f2bf-48f2-a457-851a7b1006bb
+Task: Add star click interaction to the ChaosCraft galaxy. Users should be able to click on any star in the 3D galaxy to see feature details including PR title, commit link, issue number, and files changed. Use Three.js raycasting for click detection. Implement a modal/overlay that displays the selected star's metadata when clicked.
+Started: 2025-02-25 12:03:00
+
+## Codebase Patterns
+
+### Testing
+- Project uses Vitest for testing with jsdom environment
+- Tests are located in `apps/portal/__tests__/` directory
+- Test files use `.test.tsx` extension
+- Run tests with `pnpm test:run` or `pnpm test`
+- Test config in `vitest.config.ts`
+
+### Build & Typecheck
+- Typecheck: `pnpm typecheck` (runs tsc --noEmit)
+- Build: `pnpm build` (builds both portal and galaxy)
+- Portal app uses Next.js 16.1.6 with TypeScript 5.3.3
+- Portal component structure: `apps/portal/components/`
+
+### Three.js Usage
+- Three.js is dynamically imported in useEffect
+- Three.js version: 0.161.0
+- Scene, camera, renderer pattern used throughout
+- Uses `useRef` for Three.js objects (scene, camera, renderer, animation)
+- Stars are created as THREE.Points with BufferGeometry
+
+### Component Patterns
+- React functional components with TypeScript
+- Uses `lucide-react` for icons
+- Tailwind CSS for styling
+- Cleanup pattern: useEffect returns cleanup function that cancels animationFrame and removes DOM elements
+
+---
