@@ -145,6 +145,16 @@ export default function GalaxyViewer() {
           containerRef.current.removeChild(rendererRef.current.domElement)
         }
       }
+      // Dispose of star meshes and their geometries/materials
+      starsRef.current.forEach((mesh: any) => {
+        if (mesh && mesh.geometry) {
+          mesh.geometry.dispose()
+        }
+        if (mesh && mesh.material) {
+          mesh.material.dispose()
+        }
+      })
+      starsRef.current = []
     }
   }, [starData])
 
@@ -176,50 +186,64 @@ export default function GalaxyViewer() {
       pink: 0xec4899,
     }
 
-    const starGeometry = new THREE.BufferGeometry()
-    const positions: number[] = []
-    const colors: number[] = []
-    const sizes: number[] = []
-
+    // Create individual mesh objects for each star
     starData.forEach((starDataItem) => {
       const { x, y, z } = starDataItem.position
-      positions.push(x, y, z)
 
-      // Color
-      const color = new THREE.Color(
-        COLOR_MAPPINGS[starDataItem.color] || 0xffffff
-      )
-      colors.push(color.r, color.g, color.b)
+      // Create sphere geometry for the star
+      const geometry = new THREE.SphereGeometry(starDataItem.size * 0.5, 8, 8)
 
-      // Size
-      sizes.push(starDataItem.size)
+      // Create material with star color and transparency
+      const material = new THREE.MeshBasicMaterial({
+        color: COLOR_MAPPINGS[starDataItem.color] || 0xffffff,
+        transparent: true,
+        opacity: starDataItem.brightness,
+        blending: THREE.AdditiveBlending,
+      })
+
+      // Create mesh
+      const starMesh = new THREE.Mesh(geometry, material)
+      starMesh.position.set(x, y, z)
+
+      // Store star metadata in userData for raycasting
+      starMesh.userData = {
+        id: starDataItem.id,
+        issueNumber: starDataItem.issueNumber,
+        title: starDataItem.title,
+        description: starDataItem.description,
+        color: starDataItem.color,
+        size: starDataItem.size,
+        brightness: starDataItem.brightness,
+        priority: starDataItem.priority,
+        linesChanged: starDataItem.linesChanged,
+        files: starDataItem.files,
+        commitHash: starDataItem.commitHash,
+        mergedAt: starDataItem.mergedAt,
+        builtBy: starDataItem.builtBy,
+      }
+
+      // Add to scene
+      scene.add(starMesh)
+
+      // Store in starsRef for raycasting
+      starsRef.current.push(starMesh)
+
+      // Add glowing effect for larger stars (using a larger, transparent sphere)
+      if (starDataItem.size > 2) {
+        const glowGeometry = new THREE.SphereGeometry(starDataItem.size * 0.8, 8, 8)
+        const glowMaterial = new THREE.MeshBasicMaterial({
+          color: COLOR_MAPPINGS[starDataItem.color] || 0xffffff,
+          transparent: true,
+          opacity: starDataItem.brightness * 0.3,
+          blending: THREE.AdditiveBlending,
+        })
+        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial)
+        glowMesh.position.set(x, y, z)
+        glowMesh.userData = starMesh.userData // Copy metadata
+        scene.add(glowMesh)
+        starsRef.current.push(glowMesh)
+      }
     })
-
-    starGeometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(positions, 3)
-    )
-    starGeometry.setAttribute(
-      'color',
-      new THREE.Float32BufferAttribute(colors, 3)
-    )
-    starGeometry.setAttribute(
-      'size',
-      new THREE.Float32BufferAttribute(sizes, 1)
-    )
-
-    const starMaterial = new THREE.PointsMaterial({
-      size: 3,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.9,
-      sizeAttenuation: true,
-      blending: THREE.AdditiveBlending,
-    })
-
-    const starPoints = new THREE.Points(starGeometry, starMaterial)
-    scene.add(starPoints)
-    starsRef.current.push(starPoints)
   }
 
   const createBackgroundParticles = (THREE: any, scene: any) => {
@@ -321,24 +345,35 @@ export default function GalaxyViewer() {
       // Update raycaster with mouse position
       raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera)
 
-      // Raycast against all star objects
-      const allStars: any[] = []
-      starsRef.current.forEach((starGroup: any) => {
-        if (starGroup instanceof THREE.Points) {
-          allStars.push(starGroup)
-        }
-      })
-
-      const intersects = raycaster.intersectObjects(allStars)
+      // Raycast against all star mesh objects
+      const intersects = raycaster.intersectObjects(starsRef.current)
 
       if (intersects.length > 0) {
-        // Find which star was clicked
+        // Get the first intersected star
         const intersect = intersects[0]
-        const points = intersect.object as THREE.Points
-        const index = intersect.index
+        const starMesh = intersect.object as THREE.Mesh
 
-        if (index !== undefined && index >= 0 && index < starData.length) {
-          setSelectedStar(starData[index])
+        // Check if the mesh has star metadata in userData
+        if (starMesh.userData && starMesh.userData.id) {
+          // Create a StarData object from userData
+          const selectedStarData: StarData = {
+            id: starMesh.userData.id,
+            issueNumber: starMesh.userData.issueNumber,
+            title: starMesh.userData.title,
+            description: starMesh.userData.description,
+            position: { x: starMesh.position.x, y: starMesh.position.y, z: starMesh.position.z },
+            color: starMesh.userData.color,
+            size: starMesh.userData.size,
+            brightness: starMesh.userData.brightness,
+            priority: starMesh.userData.priority,
+            linesChanged: starMesh.userData.linesChanged,
+            files: starMesh.userData.files,
+            commitHash: starMesh.userData.commitHash,
+            mergedAt: starMesh.userData.mergedAt,
+            builtBy: starMesh.userData.builtBy,
+            pulse: false, // Not stored in userData but defaults to false
+          }
+          setSelectedStar(selectedStarData)
         }
       }
     })
