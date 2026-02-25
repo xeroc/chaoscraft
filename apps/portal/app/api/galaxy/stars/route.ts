@@ -20,6 +20,11 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(), // 1 day ago
     builtBy: "user1",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/1",
+    filesChanged: [
+      { path: "apps/portal/components/LoginForm.tsx", additions: 45, deletions: 0 },
+      { path: "apps/portal/lib/auth.ts", additions: 28, deletions: 5 },
+      { path: "apps/portal/styles/login.css", additions: 15, deletions: 0 },
+    ],
   },
   {
     id: 2,
@@ -38,6 +43,10 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     builtBy: "user2",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/2",
+    filesChanged: [
+      { path: "apps/portal/components/ThemeToggle.tsx", additions: 32, deletions: 0 },
+      { path: "apps/portal/hooks/useTheme.ts", additions: 10, deletions: 0 },
+    ],
   },
   {
     id: 3,
@@ -56,6 +65,13 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
     builtBy: "user3",
     prUrl: null,
+    filesChanged: [
+      { path: "apps/portal/app/profile/page.tsx", additions: 58, deletions: 0 },
+      { path: "apps/portal/components/ProfileCard.tsx", additions: 42, deletions: 0 },
+      { path: "apps/portal/components/UserSettings.tsx", additions: 35, deletions: 3 },
+      { path: "apps/portal/lib/user.ts", additions: 18, deletions: 2 },
+      { path: "apps/portal/styles/profile.css", additions: 20, deletions: 0 },
+    ],
   },
   {
     id: 4,
@@ -74,6 +90,12 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days ago
     builtBy: "user1",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/4",
+    filesChanged: [
+      { path: "apps/portal/app/reset-password/page.tsx", additions: 38, deletions: 0 },
+      { path: "apps/portal/lib/email.ts", additions: 32, deletions: 0 },
+      { path: "apps/portal/api/reset-password/route.ts", additions: 22, deletions: 0 },
+      { path: "apps/portal/components/ResetForm.tsx", additions: 18, deletions: 0 },
+    ],
   },
   {
     id: 5,
@@ -92,6 +114,10 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
     builtBy: "user4",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/5",
+    filesChanged: [
+      { path: "apps/portal/middleware/rateLimit.ts", additions: 45, deletions: 0 },
+      { path: "apps/portal/config/limits.json", additions: 12, deletions: 0 },
+    ],
   },
   {
     id: 6,
@@ -110,6 +136,17 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
     builtBy: "Claude",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/42",
+    filesChanged: [
+      { path: "apps/portal/components/ThemeToggle.tsx", additions: 28, deletions: 5 },
+      { path: "apps/portal/styles/theme.css", additions: 22, deletions: 0 },
+      { path: "apps/portal/hooks/useTheme.ts", additions: 15, deletions: 2 },
+      { path: "apps/portal/app/layout.tsx", additions: 8, deletions: 1 },
+      { path: "apps/portal/components/Header.tsx", additions: 5, deletions: 0 },
+      { path: "apps/portal/lib/theme.ts", additions: 4, deletions: 0 },
+      { path: "apps/portal/types/theme.ts", additions: 3, deletions: 0 },
+      { path: "apps/portal/__tests__/theme.test.ts", additions: 15, deletions: 0 },
+      { path: "apps/portal/config/themes.json", additions: 8, deletions: 0 },
+    ],
   },
   {
     id: 7,
@@ -128,6 +165,11 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: null,
     builtBy: "Claude",
     prUrl: null,
+    filesChanged: [
+      { path: "apps/portal/api/auth/route.ts", additions: 3, deletions: 0 },
+      { path: "apps/portal/lib/session.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/middleware/auth.ts", additions: 1, deletions: 0 },
+    ],
   },
   {
     id: 8,
@@ -146,6 +188,18 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: null,
     builtBy: "Claude",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/44",
+    filesChanged: [
+      { path: "apps/portal/api/payments/route.ts", additions: 2, deletions: 0 },
+      { path: "apps/portal/lib/stripe.ts", additions: 2, deletions: 0 },
+      { path: "apps/portal/components/PaymentForm.tsx", additions: 1, deletions: 0 },
+      { path: "apps/portal/components/CheckoutButton.tsx", additions: 1, deletions: 0 },
+      { path: "apps/portal/hooks/usePayment.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/types/payment.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/config/stripe.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/webhooks/stripe.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/__tests__/payment.test.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/styles/payment.css", additions: 1, deletions: 0 },
+    ],
   },
   {
     id: 9,
@@ -164,6 +218,16 @@ const MOCK_STAR_DATA: StarData[] = [
     mergedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(), // 14 days ago
     builtBy: "Claude",
     prUrl: "https://github.com/xeroc/chaoscraft/pull/45",
+    filesChanged: [
+      { path: "apps/portal/api/websocket/route.ts", additions: 2, deletions: 0 },
+      { path: "apps/portal/hooks/useWebSocket.ts", additions: 2, deletions: 0 },
+      { path: "apps/portal/components/QueueStatus.tsx", additions: 1, deletions: 0 },
+      { path: "apps/portal/components/BuildProgress.tsx", additions: 1, deletions: 0 },
+      { path: "apps/portal/lib/queue.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/types/websocket.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/__tests__/queue.test.ts", additions: 1, deletions: 0 },
+      { path: "apps/portal/styles/queue.css", additions: 1, deletions: 0 },
+    ],
   },
 ]
 

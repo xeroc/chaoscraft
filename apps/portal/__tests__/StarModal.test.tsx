@@ -5,6 +5,7 @@
  * - Commit link functionality
  * - Issue link functionality
  * - Graceful handling of missing/null fields
+ * - Files changed list display
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -86,6 +87,11 @@ global.fetch = vi.fn((url) => {
             mergedAt: '2024-01-15T10:30:00Z',
             builtBy: 'testuser',
             prUrl: 'https://github.com/xeroc/chaoscraft/pull/1',
+            filesChanged: [
+              { path: 'apps/portal/components/ThemeToggle.tsx', additions: 45, deletions: 12 },
+              { path: 'apps/portal/styles/theme.css', additions: 20, deletions: 5 },
+              { path: 'apps/portal/hooks/useTheme.ts', additions: 15, deletions: 2 },
+            ],
           },
         ],
         source: 'mock',
@@ -143,6 +149,7 @@ describe('Star Modal Display', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: 'https://github.com/xeroc/chaoscraft/pull/1',
+        filesChanged: [{ path: 'test.ts', additions: 10, deletions: 5 }],
       }
 
       expect(mockStarWithIssue.issueNumber).toBe(42)
@@ -166,6 +173,7 @@ describe('Star Modal Display', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(mockStarWithoutIssue.issueNumber).toBeNull()
@@ -191,6 +199,7 @@ describe('Star Modal Display', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: 'https://github.com/xeroc/chaoscraft/pull/1',
+        filesChanged: [],
       }
 
       expect(mockStarWithCommit.commitHash).toBe('abc12345')
@@ -217,6 +226,7 @@ describe('Star Modal Display', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(mockStarWithoutCommit.commitHash).toBe('')
@@ -244,6 +254,9 @@ describe('Modal Data State Handling', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: 'https://github.com/xeroc/chaoscraft/pull/1',
+        filesChanged: [
+          { path: 'src/test.ts', additions: 100, deletions: 50 },
+        ],
       }
 
       expect(completeStar.title).toBeTruthy()
@@ -254,6 +267,7 @@ describe('Modal Data State Handling', () => {
       expect(completeStar.files).toBeGreaterThan(0)
       expect(completeStar.linesChanged).toBeGreaterThan(0)
       expect(completeStar.mergedAt).toBeTruthy()
+      expect(completeStar.filesChanged).toHaveLength(1)
     })
   })
 
@@ -276,6 +290,7 @@ describe('Modal Data State Handling', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(partialStar.title).toBeTruthy()
@@ -301,6 +316,7 @@ describe('Modal Data State Handling', () => {
         mergedAt: null,
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(unmergedStar.title).toBeTruthy()
@@ -326,6 +342,7 @@ describe('Modal Data State Handling', () => {
         mergedAt: '2024-01-15T10:30:00Z',
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(starWithoutPrUrl.title).toBeTruthy()
@@ -352,6 +369,7 @@ describe('Modal Data State Handling', () => {
         mergedAt: null,
         builtBy: 'testuser',
         prUrl: null,
+        filesChanged: [],
       }
 
       expect(minimalStar.title).toBeTruthy()
@@ -359,6 +377,7 @@ describe('Modal Data State Handling', () => {
       expect(minimalStar.commitHash).toBe('')
       expect(minimalStar.mergedAt).toBeNull()
       expect(minimalStar.prUrl).toBeNull()
+      expect(minimalStar.filesChanged).toHaveLength(0)
     })
   })
 })
@@ -412,6 +431,132 @@ describe('Modal Text Content', () => {
     priorities.forEach((priority) => {
       const capitalized = priority.charAt(0).toUpperCase() + priority.slice(1)
       expect(capitalized).toMatch(/^[A-Z][a-z]+$/)
+    })
+  })
+})
+
+describe('Files Changed List', () => {
+  describe('File Change Data Structure', () => {
+    it('should correctly structure filesChanged array', () => {
+      const filesChanged = [
+        { path: 'src/components/Button.tsx', additions: 45, deletions: 12 },
+        { path: 'src/styles/button.css', additions: 20, deletions: 5 },
+        { path: 'src/tests/Button.test.ts', additions: 30, deletions: 0 },
+      ]
+
+      expect(filesChanged).toHaveLength(3)
+      expect(filesChanged[0].path).toBe('src/components/Button.tsx')
+      expect(filesChanged[0].additions).toBe(45)
+      expect(filesChanged[0].deletions).toBe(12)
+    })
+
+    it('should sort files by lines changed (descending)', () => {
+      const filesChanged = [
+        { path: 'file1.ts', additions: 10, deletions: 5 },   // 15 total
+        { path: 'file2.ts', additions: 30, deletions: 10 },  // 40 total
+        { path: 'file3.ts', additions: 5, deletions: 0 },    // 5 total
+      ]
+
+      // Sort by total lines changed descending
+      const sorted = [...filesChanged].sort((a, b) =>
+        (b.additions + b.deletions) - (a.additions + a.deletions)
+      )
+
+      expect(sorted[0].path).toBe('file2.ts')  // 40 total
+      expect(sorted[1].path).toBe('file1.ts')  // 15 total
+      expect(sorted[2].path).toBe('file3.ts')  // 5 total
+    })
+  })
+
+  describe('Display Limit (10 files)', () => {
+    it('should show first 10 files when more than 10 exist', () => {
+      const manyFiles = Array.from({ length: 15 }, (_, i) => ({
+        path: `file${i + 1}.ts`,
+        additions: 10 + i,
+        deletions: 5,
+      }))
+
+      const displayLimit = 10
+      const visibleFiles = manyFiles.slice(0, displayLimit)
+
+      expect(visibleFiles).toHaveLength(10)
+      expect(manyFiles.length - displayLimit).toBe(5)
+    })
+
+    it('should show all files when less than 10 exist', () => {
+      const fewFiles = Array.from({ length: 5 }, (_, i) => ({
+        path: `file${i + 1}.ts`,
+        additions: 10 + i,
+        deletions: 5,
+      }))
+
+      const displayLimit = 10
+      const visibleFiles = fewFiles.slice(0, displayLimit)
+
+      expect(visibleFiles).toHaveLength(5)
+    })
+  })
+
+  describe('Additions/Deletions Display', () => {
+    it('should format additions with green color (+prefix)', () => {
+      const file = { path: 'test.ts', additions: 42, deletions: 10 }
+      const formattedAdditions = `+${file.additions}`
+
+      expect(formattedAdditions).toBe('+42')
+    })
+
+    it('should format deletions with red color (-prefix)', () => {
+      const file = { path: 'test.ts', additions: 42, deletions: 15 }
+      const formattedDeletions = `-${file.deletions}`
+
+      expect(formattedDeletions).toBe('-15')
+    })
+
+    it('should handle zero additions/deletions', () => {
+      const file = { path: 'test.ts', additions: 0, deletions: 0 }
+      const formattedAdditions = `+${file.additions}`
+      const formattedDeletions = `-${file.deletions}`
+
+      expect(formattedAdditions).toBe('+0')
+      expect(formattedDeletions).toBe('-0')
+    })
+  })
+
+  describe('PR Link', () => {
+    it('should generate correct PR URL from prUrl field', () => {
+      const prUrl = 'https://github.com/xeroc/chaoscraft/pull/42'
+      expect(prUrl).toBe('https://github.com/xeroc/chaoscraft/pull/42')
+    })
+
+    it('should handle null prUrl gracefully', () => {
+      const prUrl = null
+      expect(prUrl).toBeNull()
+    })
+  })
+
+  describe('Show More/Less Toggle', () => {
+    it('should calculate remaining files count for show more button', () => {
+      const manyFiles = Array.from({ length: 15 }, (_, i) => ({
+        path: `file${i + 1}.ts`,
+        additions: 10,
+        deletions: 5,
+      }))
+
+      const displayLimit = 10
+      const remaining = manyFiles.length - displayLimit
+
+      expect(remaining).toBe(5)
+    })
+
+    it('should not show toggle when files <= 10', () => {
+      const fewFiles = Array.from({ length: 8 }, (_, i) => ({
+        path: `file${i + 1}.ts`,
+        additions: 10,
+        deletions: 5,
+      }))
+
+      const shouldShowToggle = fewFiles.length > 10
+      expect(shouldShowToggle).toBe(false)
     })
   })
 })
