@@ -1229,7 +1229,7 @@ Profit: ~97% margin
   - [ ] Camera controls (zoom, rotate, pan)
   - [ ] Click interaction (inspect feature details)
 - [ ] Obtain meta data for stars
-  - [ ] Extract PR metadata (commit hash, lines changed, file types) via github api
+  - ✅ Extract PR metadata (commit hash, lines changed, file types) via github api
   - [ ] Calculate deterministic position (hash function)
   - [ ] Map file types to colors
   - [ ] Calculate size (lines / 10)
