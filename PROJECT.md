@@ -1216,10 +1216,10 @@ Profit: ~97% margin
 - ✅ Configure custom domains (repo.fun, galaxy.repo.fun)
 - ✅ Create Next.js portal app
   - ✅ Request submission form (120 char limit)
-  - [ ] Stripe integration (checkout + webhook)
+  - ✅ Stripe integration (checkout + webhook)
   - ❌ Solana integration (transaction verification) - we do this later
-  - [ ] API routes for payment verification
-  - [ ] SQLite DB schema (payment tracking)
+  - ✅ API routes for payment verification
+  - ✅ SQLite DB schema (payment tracking)
 - ❌ Deploy Next.js portal to Vercel - later
 
 ### Phase 2: Galaxy Implementation
