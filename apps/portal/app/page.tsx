@@ -1,15 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Sparkles, Zap, Clock } from "lucide-react";
 import RequestForm from "@/components/RequestForm";
 import QueueTracker from "@/components/QueueTracker";
 import GalaxyViewer from "@/components/GalaxyViewer";
 
+interface Stats {
+  stars: number;
+  lastFeature: string | null;
+  queue: number;
+}
+
 export default function Home() {
   const [currentView, setCurrentView] = useState<"craft" | "queue" | "galaxy">(
     "craft",
   );
+  const [stats, setStats] = useState<Stats>({
+    stars: 0,
+    lastFeature: null,
+    queue: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch("/api/galaxy/stats");
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
 
   return (
     <main className="min-h-screen galaxy-gradient text-white">
@@ -131,8 +159,8 @@ export default function Home() {
               <Star className="w-4 h-4 text-yellow-400" />
               <span className="text-white/70">
                 Current Galaxy:{" "}
-                <span className="text-white font-semibold" id="star-count">
-                  142
+                <span className="text-white font-semibold">
+                  {loading ? "..." : stats.stars}
                 </span>{" "}
                 stars
               </span>
@@ -141,8 +169,15 @@ export default function Home() {
               <Zap className="w-4 h-4 text-purple-400" />
               <span className="text-white/70">
                 Last Feature:{" "}
-                <span className="text-white font-semibold" id="last-feature">
-                  Dancing robot
+                <span
+                  className="text-white font-semibold cursor-help"
+                  title={loading ? "Loading..." : stats.lastFeature || "None"}
+                >
+                  {loading
+                    ? "..."
+                    : stats.lastFeature
+                      ? `${stats.lastFeature.slice(0, 20)}${stats.lastFeature.length > 20 ? "..." : ""}`
+                      : "None"}
                 </span>
               </span>
             </div>
@@ -150,8 +185,8 @@ export default function Home() {
               <Clock className="w-4 h-4 text-blue-400" />
               <span className="text-white/70">
                 Queue:{" "}
-                <span className="text-white font-semibold" id="queue-count">
-                  23
+                <span className="text-white font-semibold">
+                  {loading ? "..." : stats.queue}
                 </span>{" "}
                 pending
               </span>

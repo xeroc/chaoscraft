@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { CheckCircle, ArrowRight, ExternalLink } from 'lucide-react'
-import Link from 'next/link'
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle, ArrowRight, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 function LoadingState() {
   return (
@@ -13,30 +13,23 @@ function LoadingState() {
         <p className="text-xl text-white">Processing your payment...</p>
       </div>
     </div>
-  )
+  );
 }
 
 function SuccessContent() {
-  const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session_id')
-  const [loading, setLoading] = useState(true)
-  const [issueNumber, setIssueNumber] = useState<number | null>(null)
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const issueIdParam = searchParams.get("issueId");
+  const [issueNumber, setIssueNumber] = useState<number | null>(null);
+
+  const githubOwner = process.env.NEXT_PUBLIC_GITHUB_OWNER;
+  const githubRepo = process.env.NEXT_PUBLIC_GITHUB_REPO;
 
   useEffect(() => {
-    if (sessionId) {
-      // In production, you'd verify the session and get the issue number
-      // For now, simulate a delay
-      setTimeout(() => {
-        setLoading(false)
-        // This would be fetched from the backend
-        setIssueNumber(142)
-      }, 2000)
+    if (issueIdParam) {
+      setIssueNumber(parseInt(issueIdParam, 10));
     }
-  }, [sessionId])
-
-  if (loading) {
-    return <LoadingState />
-  }
+  }, [issueIdParam]);
 
   return (
     <div className="min-h-screen galaxy-gradient flex items-center justify-center p-4">
@@ -45,14 +38,27 @@ function SuccessContent() {
           <CheckCircle className="w-10 h-10 text-green-400" />
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-2">Payment Successful!</h1>
-        <p className="text-blue-200/70 mb-6">Your feature request has been submitted to the queue</p>
+        <h1 className="text-3xl font-bold text-white mb-2">
+          Payment Successful!
+        </h1>
+        <p className="text-blue-200/70 mb-6">
+          Your feature request has been submitted to the queue
+        </p>
 
         {issueNumber && (
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-300/70 mb-1">Your Request</p>
-            <p className="text-2xl font-bold text-white mb-2">Issue #{issueNumber}</p>
-            <p className="text-sm text-blue-200/60">Position in queue will be calculated shortly</p>
+            <p className="text-2xl font-bold text-white mb-2">
+              Issue #
+              <a
+                href={`https://github.com/${githubOwner}/${githubRepo}/issues/${issueNumber}`}
+              >
+                {issueNumber}
+              </a>
+            </p>
+            <p className="text-sm text-blue-200/60">
+              Position in queue will be calculated shortly
+            </p>
           </div>
         )}
 
@@ -75,8 +81,11 @@ function SuccessContent() {
 
         <div className="mt-6 pt-6 border-t border-white/10">
           <p className="text-sm text-blue-300/70">
-            Watch your star be built in real-time at the{' '}
-            <a href="https://github.com/chaoscraft/chaoscraft/issues" className="text-blue-400 hover:underline flex items-center justify-center gap-1 mt-2">
+            Watch your star be built in real-time at the{" "}
+            <a
+              href={`https://github.com/${githubOwner}/${githubRepo}/issues`}
+              className="text-blue-400 hover:underline flex items-center justify-center gap-1 mt-2"
+            >
               <ExternalLink className="w-3 h-3" />
               GitHub Issue Tracker
             </a>
@@ -84,7 +93,7 @@ function SuccessContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function SuccessPage() {
@@ -92,5 +101,5 @@ export default function SuccessPage() {
     <Suspense fallback={<LoadingState />}>
       <SuccessContent />
     </Suspense>
-  )
+  );
 }
