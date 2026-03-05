@@ -111,6 +111,7 @@ async function initializeTables(client: DbClient): Promise<void> {
       issue_number INTEGER NOT NULL,
       request_text TEXT NOT NULL,
       status TEXT NOT NULL,
+      commit TEXT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (issue_number) REFERENCES payments(issue_number)
     );

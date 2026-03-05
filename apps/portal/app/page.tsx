@@ -12,6 +12,19 @@ interface Stats {
   queue: number;
 }
 
+interface FlowStatus {
+  id: number;
+  issue_id: number;
+  method: string;
+  updatedAt: string;
+  stories: Array<{
+    id: number;
+    title: string;
+    description: string;
+  }>;
+  task: string;
+}
+
 export default function Home() {
   const [currentView, setCurrentView] = useState<"craft" | "queue" | "galaxy">(
     "craft",
@@ -22,6 +35,23 @@ export default function Home() {
     queue: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [flowStatus, setFlowStatus] = useState<FlowStatus[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  function getTimeDelta(timestamp: string): string {
+    const diff = currentTime.getTime() - new Date(timestamp).getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
 
   useEffect(() => {
     async function fetchStats() {
@@ -37,6 +67,28 @@ export default function Home() {
     }
 
     fetchStats();
+  }, []);
+
+  useEffect(() => {
+    async function fetchFlowStatus() {
+      try {
+        const response = await fetch("/api/flow/status");
+        if (!response.ok) return;
+        const data: FlowStatus[] = await response.json();
+        setFlowStatus(data);
+      } catch (error) {
+        console.error("Failed to fetch flow status:", error);
+      }
+    }
+
+    fetchFlowStatus();
+    const interval = setInterval(fetchFlowStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -152,7 +204,7 @@ export default function Home() {
       </div>
 
       {/* Stats Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 border-t border-white/10 backdrop-blur-sm">
+      <footer className="fixed bottom-0 left-0 right-0 border-t border-white/10 backdrop-blur-sm h-10">
         <div className="container mx-auto px-4 py-3">
           <div className="flex justify-center gap-8 text-sm">
             <div className="flex items-center gap-2">
@@ -194,6 +246,73 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Console Log Entry */}
+      <div className="fixed bottom-10 left-0 right-0 border-t border-white/5 bg-black/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex flex-col gap-1 text-xs font-mono text-white/60">
+            {flowStatus.length > 0 ? (
+              flowStatus.map((status, idx) => (
+                <div key={status.id} className="flex items-start gap-2">
+                  <span
+                    className={idx === 0 ? "text-green-400" : "text-white/30"}
+                  >
+                    &gt;
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          idx === 0 ? "text-blue-400" : "text-white/40"
+                        }
+                      >
+                        [{status.method.toUpperCase()}]
+                      </span>
+                      <span
+                        className={
+                          idx === 0 ? "text-white/80" : "text-white/40"
+                        }
+                      >
+                        #{status.issue_id}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          idx === 0
+                            ? "text-white/70 font-semibold"
+                            : "text-white/40"
+                        }
+                      >
+                        {status.task}
+                      </span>
+                      {status.method == "implement_story" &&
+                        status.stories.length > 0 && (
+                          <span
+                            className={
+                              idx === 0
+                                ? "text-white/50 truncate"
+                                : "text-white/20 truncate"
+                            }
+                          >
+                            {status.stories[0].description}
+                          </span>
+                        )}
+                    </div>
+                  </div>
+                  <span className="text-white/40 whitespace-nowrap mt-1">
+                    {getTimeDelta(status.updatedAt)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-white/40">Waiting for chaos...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
