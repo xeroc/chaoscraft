@@ -142,7 +142,7 @@ export default function Home() {
               </button>
               <a
                 type="button"
-                href="https://chaoscraft.com"
+                href="https://chaoscraft.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block px-4 py-2 rounded-lg transition-all text-white/60 hover:text-white hover:bg-white/5"
