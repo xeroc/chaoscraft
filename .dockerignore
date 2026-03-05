@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env*.local
+*.log
+coverage
+.vscode
+.idea
+dist
+build
+apps/portal/.next
+apps/portal/node_modules
