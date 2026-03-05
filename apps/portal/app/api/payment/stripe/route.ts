@@ -47,16 +47,16 @@ async function updateIssueDb(
   });
 
   // Update payment with issue number
-  await run(`UPDATE payments SET issue_number = ? WHERE id = ?`, [
+  await run(`UPDATE payments SET issue_number = $1 WHERE id = $2`, [
     issueId,
     paymentDbId,
   ]);
 
   // Insert request record
-  await run(
-    `UPDATE requests SET status = ? WHERE issue_number = ? VALUES (?, ?)`,
-    ["paid", issueId],
-  );
+  await run(`UPDATE requests SET status = $1 WHERE issue_number = $2`, [
+    "paid",
+    issueId,
+  ]);
 
   return issue;
 }
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
           // Check if payment already processed
           const existingPayment = await queryOne(
-            "SELECT * FROM payments WHERE id = ?",
+            "SELECT * FROM payments WHERE id = $1",
             [paymentDbId],
           );
 
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
           // Update payment status
           await run(
-            `UPDATE payments SET status = ?, verified_at = ? WHERE id = ?`,
+            `UPDATE payments SET status = $1, verified_at = $2 WHERE id = $3`,
             ["verified", new Date().toISOString(), paymentDbId],
           );
 
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
         // Mark payment as expired
         if (paymentDbId > 0) {
-          await run(`UPDATE payments SET status = ? WHERE id = ?`, [
+          await run(`UPDATE payments SET status = $1 WHERE id = $2`, [
             "expired",
             paymentDbId,
           ]);
@@ -143,12 +143,12 @@ export async function POST(req: NextRequest) {
 
         // Find payment by payment_id (which contains session ID)
         const payment = await queryOne(
-          "SELECT * FROM payments WHERE payment_id LIKE ?",
+          "SELECT * FROM payments WHERE payment_id LIKE $1",
           [`%${paymentIntent.id}%`],
         );
 
         if (payment) {
-          await run(`UPDATE payments SET status = ? WHERE id = ?`, [
+          await run(`UPDATE payments SET status = $1 WHERE id = $2`, [
             "failed",
             payment.id,
           ]);

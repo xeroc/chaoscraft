@@ -26,7 +26,6 @@ async function createGitHubIssue(requestText: string, priority: string) {
   if (!githubOwner) {
     throw new Error("GITHUB_OWNER environment variable is required");
   }
-  console.log(githubToken);
   const octokit = new Octokit({
     auth: githubToken,
   });
@@ -90,11 +89,11 @@ export async function POST(req: NextRequest) {
 
     const result = await run(
       `INSERT INTO payments (payment_id, amount, currency, payment_method, status, issue_number)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [paymentId, amount, "usd", body.paymentMethod, "new", issueId],
     );
     await run(
-      `INSERT INTO requests (issue_number, request_text, status) VALUES (?, ?, ?)`,
+      `INSERT INTO requests (issue_number, request_text, status) VALUES ($1, $2, $3)`,
       [issueId, body.request, "new"],
     );
 
