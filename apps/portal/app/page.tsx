@@ -99,14 +99,14 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-4xl">🎪</div>
-              <div>
+              <a onClick={() => setCurrentView("craft")}>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   chaoscraft
                 </h1>
                 <p className="text-sm text-blue-300/70">
                   Pay $1 → Watch chaos unfold
                 </p>
-              </div>
+              </a>
             </div>
 
             <nav className="flex gap-2">
@@ -142,12 +142,12 @@ export default function Home() {
               </button>
               <a
                 type="button"
-                href="https://app.chaoscraft.com"
+                href="https://chaoscraft.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block px-4 py-2 rounded-lg transition-all text-white/60 hover:text-white hover:bg-white/5"
               >
-                Chaos
+                🌪️Chaos
               </a>
             </nav>
           </div>
