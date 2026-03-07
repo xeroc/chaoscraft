@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --background: 222.2 84% 4.9%;
+  --background: #0c4a6e;
   --foreground: 210 40% 98%;
   --galaxy-dark: #0c4a6e;
   --galaxy-mid: #1e1b4b;
