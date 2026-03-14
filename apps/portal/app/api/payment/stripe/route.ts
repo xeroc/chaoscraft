@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getDb, run, queryOne } from "@/lib/db";
+import { run, queryOne } from "@/lib/db";
 import { Octokit } from "octokit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -43,7 +43,7 @@ async function updateIssueDb(
     owner: process.env.GITHUB_OWNER!,
     repo: process.env.GITHUB_REPO!,
     issue_number: issueId,
-    labels: ["paid"],
+    labels: ["polycode:automerge", "polycode:implement"], // this trigger flow and enable final merging of the results
   });
 
   // Update payment with issue number
