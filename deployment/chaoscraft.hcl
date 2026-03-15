@@ -50,9 +50,9 @@ job "chaoscraft" {
       }
       env {
         # DATABASE_URL = "not-yet-implemented"
+        NEXT_PUBLIC_BASE_URL     = "https://app.${var.domain}"
         GITHUB_OWNER             = "chainsquad"
         GITHUB_REPO              = "chaoscraft"
-        NEXT_PUBLIC_BASE_URL     = "https://app.${var.domain}"
         NEXT_PUBLIC_GITHUB_OWNER = "chainsquad"
         NEXT_PUBLIC_GITHUB_REPO  = "chaoscraft"
         DATABASE_TYPE            = "postgres"

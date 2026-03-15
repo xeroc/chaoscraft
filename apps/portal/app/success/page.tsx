@@ -49,11 +49,10 @@ function SuccessContent() {
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-300/70 mb-1">Your Request</p>
             <p className="text-2xl font-bold text-white mb-2">
-              Issue #
               <a
                 href={`https://github.com/${githubOwner}/${githubRepo}/issues/${issueNumber}`}
               >
-                {issueNumber}
+                Issue #{issueNumber}
               </a>
             </p>
             <p className="text-sm text-blue-200/60">
